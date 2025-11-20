@@ -111,7 +111,7 @@
         }
         .modal-layer.active { transform: translateY(0); }
 
-        /* --- HUD (修改版：置中，移除 Tasks) --- */
+        /* --- HUD --- */
         #hud {
             position: absolute;
             top: 10px; 
@@ -131,7 +131,7 @@
         .hud-label { font-size: 10px; color: #00c3ff; letter-spacing: 2px; font-family: 'Orbitron'; opacity: 0.9; }
         .hud-value { font-family: 'Orbitron', sans-serif; font-size: 24px; color: white; font-weight: bold; text-shadow: 0 0 10px rgba(0, 195, 255, 0.5); line-height: 1; }
 
-        /* --- 排行榜樣式 (極簡科技風) --- */
+        /* --- 排行榜樣式 --- */
         .lb-container-mini {
             width: 100%; max-width: 340px;
             background: rgba(10, 20, 40, 0.6);
@@ -174,7 +174,7 @@
         .rank-2 { color: #e0e0e0 !important; font-weight: bold; }
         .rank-3 { color: #c58f60 !important; font-weight: bold; }
 
-        /* --- 按鈕 (Samsung Flagship Style) --- */
+        /* --- 按鈕 --- */
         .btn-primary {
             background: #000;
             border: 1px solid #00c3ff;
@@ -516,7 +516,7 @@
                 
                 <div class="ticket-body">
                     <div class="ticket-qr">
-                        <img src="https://raw.githubusercontent.com/andyhhsu/Galaxy-Christmas-Challenge/main/LINE%40.png" class="w-full h-full object-contain">
+                        <img src="LINE (7)-Photoroom.png" class="w-full h-full object-contain">
                     </div>
                     <div class="ticket-info">
                         <div class="store-tag">📍 三星旗艦館 - 微風南山</div>
@@ -801,10 +801,11 @@ class Game {
         this.difficultyLevel = 1;
         this.lastBrickSpawnTime = 0; 
         this.lastShotTime = 0; 
-        this.brickSpeed = 0.1;
-        
-        // V6.9: Detect Mobile for EVEN LOWER speed (2.5)
+        // V7.0: Boost Brick Speed for Mobile
         const isMobile = window.innerWidth < 600;
+        this.brickSpeed = isMobile ? 1.5 : 1.0; // Mobile gets faster fall speed
+        
+        // V6.9: Detect Mobile for EVEN LOWER ball speed (2.5)
         this.baseBallSpeed = isMobile ? 2.5 : 5.0;
         
         const paddleY = this.height - 120;
@@ -915,7 +916,9 @@ class Game {
         const currentBallSpeed = this.baseBallSpeed + (speedStep * speedMult); 
         this.balls.forEach(ball => ball.speed = currentBallSpeed);
 
-        this.brickSpeed = 0.1 + Math.min(1.4, this.score / 20000); 
+        // V7.0: Faster Brick Fall Speed
+        const baseBrickSpeed = isMobile ? 1.5 : 1.0;
+        this.brickSpeed = baseBrickSpeed + Math.min(1.4, this.score / 20000); 
         
         // FASTER SPAWN RATE
         if(Date.now() - this.lastBrickSpawnTime > 4000 - (this.difficultyLevel * 150)) {
