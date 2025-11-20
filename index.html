@@ -3,7 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Galaxy 聖誕挑戰</title>
+    <title>Galaxy Christmas Challenge</title>
+    
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-L2MHS96YCN"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+    
+      gtag('config', 'G-L2MHS96YCN');
+    </script>
+
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Noto+Sans+TC:wght@300;400;700&display=swap');
@@ -15,15 +26,21 @@
             overflow: hidden;
             touch-action: none;
             user-select: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
         }
 
-        /* --- 畫布與容器 (科技深空背景) --- */
-        #game-container {
+        /* --- 遊戲容器 (RWD 適配核心) --- */
+        #game-wrapper {
             position: relative;
-            width: 100vw;
-            height: 100vh;
+            width: 100%;
+            height: 100%;
+            max-width: 500px; /* 限制最大寬度，確保在電腦上也是直式體驗 */
             background: radial-gradient(circle at 50% 120%, #0a1a3a 0%, #000000 80%);
             overflow: hidden;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
         }
 
         canvas {
@@ -94,19 +111,25 @@
         }
         .modal-layer.active { transform: translateY(0); }
 
-        /* --- HUD (科技藍) --- */
+        /* --- HUD (修改版：置中，移除 Tasks) --- */
         #hud {
             position: absolute;
-            top: 0; left: 0; width: 100%;
-            padding: 24px;
+            top: 10px; 
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 8px 20px;
             display: flex;
-            justify-content: space-between;
+            flex-direction: column;
+            align-items: center;
             pointer-events: none;
             z-index: 10;
+            background: rgba(0,0,0,0.5);
+            border-radius: 20px;
+            border: 1px solid rgba(0, 195, 255, 0.3);
+            backdrop-filter: blur(4px);
         }
-        .hud-item { text-align: center; }
-        .hud-label { font-size: 10px; color: #00c3ff; letter-spacing: 2px; font-family: 'Orbitron'; opacity: 0.8; }
-        .hud-value { font-family: 'Orbitron', sans-serif; font-size: 28px; color: white; font-weight: bold; text-shadow: 0 0 10px rgba(0, 195, 255, 0.5); }
+        .hud-label { font-size: 10px; color: #00c3ff; letter-spacing: 2px; font-family: 'Orbitron'; opacity: 0.9; }
+        .hud-value { font-family: 'Orbitron', sans-serif; font-size: 24px; color: white; font-weight: bold; text-shadow: 0 0 10px rgba(0, 195, 255, 0.5); line-height: 1; }
 
         /* --- 排行榜樣式 (極簡科技風) --- */
         .lb-container-mini {
@@ -305,53 +328,49 @@
 </head>
 <body>
 
-<div id="game-container">
-    <canvas id="gameCanvas"></canvas>
-    <div id="danger-overlay"></div>
-    <div id="flash-overlay"></div>
+<div id="game-wrapper">
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+        <div id="danger-overlay"></div>
+        <div id="flash-overlay"></div>
 
-    <!-- HUD -->
-    <div id="hud">
-        <div class="hud-item">
-            <div class="hud-label">SCORE</div>
-            <div class="hud-value" id="scoreVal">0</div>
-        </div>
-        <div class="hud-item">
-            <div class="hud-label">TASKS</div>
-            <div class="hud-value" id="comboVal">0</div>
-        </div>
-    </div>
-
-    <!-- 狀態顯示 -->
-    <div id="mode-indicator" style="position:absolute; bottom:140px; left:50%; transform:translateX(-50%); opacity:0; pointer-events:none; color:#00c3ff; font-weight:bold; background:rgba(0,0,0,0.8); padding:5px 15px; border-radius:4px; font-size:12px; transition:opacity 0.3s; border:1px solid #00c3ff; font-family: 'Orbitron'; letter-spacing: 2px;">MODE</div>
-
-    <!-- 1. Start Screen -->
-    <div id="startScreen" class="ui-layer">
-        <div class="text-center mb-8 mt-4">
-            <!-- Removed SAMSUNG PRESENTS -->
-            <h1 class="text-4xl md:text-6xl font-black text-white tracking-tighter mb-1" style="font-family: 'Orbitron'; text-shadow: 0 0 20px rgba(0,195,255,0.5);">GALAXY</h1>
-            <h2 class="text-xl text-[#00c3ff] tracking-[0.3em] font-bold">聖誕挑戰</h2>
-        </div>
-        
-        <!-- Top 3 Leaderboard -->
-        <div class="lb-container-mini">
-            <div class="lb-title">RANKINGS</div>
-            <div id="top3-list" class="flex flex-col gap-2">
-                <div class="text-center text-gray-500 text-xs font-mono">LOADING_DATA...</div>
+        <!-- HUD (Centered, No Tasks) -->
+        <div id="hud">
+            <div class="hud-item">
+                <div class="hud-label">SCORE</div>
+                <div class="hud-value" id="scoreVal">0</div>
             </div>
-            <button class="btn-text w-full text-center" onclick="api.openFullLeaderboard()">查看完整排行榜 >></button>
         </div>
 
-        <div class="w-full max-w-xs flex flex-col items-center">
-            <button class="btn-primary btn-attract" onclick="game.showInstructions()">START</button>
-        </div>
-    </div>
+        <!-- 狀態顯示 -->
+        <div id="mode-indicator" style="position:absolute; bottom:140px; left:50%; transform:translateX(-50%); opacity:0; pointer-events:none; color:#00c3ff; font-weight:bold; background:rgba(0,0,0,0.8); padding:5px 15px; border-radius:4px; font-size:12px; transition:opacity 0.3s; border:1px solid #00c3ff; font-family: 'Orbitron'; letter-spacing: 2px;">MODE</div>
 
-    <!-- 1.5 Instruction Screen -->
-    <div id="instructionScreen" class="ui-layer hidden">
-        <div class="w-full max-w-md flex justify-between items-end mb-4">
-             <h2 class="text-4xl font-bold text-white" style="font-family: 'Noto Sans TC'">遊戲說明</h2>
-             <div class="text-[#00c3ff] text-xs tracking-widest">SYSTEM READY</div>
+        <!-- 1. Start Screen -->
+        <div id="startScreen" class="ui-layer">
+            <div class="text-center mb-8 mt-4">
+                <h1 class="text-4xl md:text-6xl font-black text-white tracking-tighter mb-1" style="font-family: 'Orbitron'; text-shadow: 0 0 20px rgba(0,195,255,0.5);">GALAXY</h1>
+                <h2 class="text-xl text-[#00c3ff] tracking-[0.3em] font-bold">CHRISTMAS CHALLENGE</h2>
+            </div>
+            
+            <!-- Top 3 Leaderboard -->
+            <div class="lb-container-mini">
+                <div class="lb-title">RANKINGS</div>
+                <div id="top3-list" class="flex flex-col gap-2">
+                    <div class="text-center text-gray-500 text-xs font-mono">LOADING_DATA...</div>
+                </div>
+                <button class="btn-text w-full text-center" onclick="api.openFullLeaderboard()">查看完整排行榜 >></button>
+            </div>
+
+            <div class="w-full max-w-xs flex flex-col items-center">
+                <button class="btn-primary btn-attract" onclick="game.showInstructions()">START</button>
+            </div>
+        </div>
+
+        <!-- 1.5 Instruction Screen -->
+        <div id="instructionScreen" class="ui-layer hidden">
+            <div class="w-full max-w-md flex justify-between items-end mb-4">
+                 <h2 class="text-4xl font-bold text-white" style="font-family: 'Noto Sans TC'">遊戲說明</h2>
+                 <div class="text-[#00c3ff] text-xs tracking-widest">SYSTEM READY</div>
         </div>
         
         <!-- 玩法說明 -->
@@ -467,7 +486,7 @@
             
             <div class="ticket-body">
                 <div class="ticket-qr">
-                    <img src="https://raw.githubusercontent.com/andyhhsu/Galaxy-Christmas-Challenge/main/LINE%40.png" class="w-full h-full object-contain">
+                    <img src="LINE (7)-Photoroom.png" class="w-full h-full object-contain">
                 </div>
                 <div class="ticket-info">
                     <div class="store-tag">📍 三星旗艦館 - 微風南山</div>
@@ -495,7 +514,7 @@
         
         <button class="btn-secondary max-w-xs mt-4" onclick="api.closeFullLeaderboard()">關閉</button>
     </div>
-
+  </div>
 </div>
 
 <script>
@@ -573,6 +592,7 @@ const GoogleSheetAPI = {
     openFullLeaderboard: function() {
         document.getElementById('leaderboardModal').classList.add('active');
         this.renderFullList();
+        gtag('event', 'view_leaderboard');
     },
 
     closeFullLeaderboard: function() {
@@ -601,6 +621,13 @@ const GoogleSheetAPI = {
         formData.append('phone', phone);
         formData.append('score', score);
         formData.append('action', 'add');
+
+        // Google Analytics Event
+        gtag('event', 'generate_lead', {
+            'event_category': 'game',
+            'event_label': 'score_submit',
+            'value': score
+        });
 
         fetch(this.scriptURL, { method: 'POST', body: formData })
             .then(res => res.json())
@@ -654,11 +681,9 @@ class Game {
         this.ctx = this.canvas.getContext('2d');
         this.audio = new SoundManager();
         
-        this.width = window.innerWidth; this.height = window.innerHeight;
-        this.canvas.width = this.width; this.canvas.height = this.height;
-
+        // Initial setup
+        this.resize();
         this.hudScore = document.getElementById('scoreVal');
-        this.hudCombo = document.getElementById('comboVal');
         this.modeIndicator = document.getElementById('mode-indicator');
         this.dangerOverlay = document.getElementById('danger-overlay');
         this.flashOverlay = document.getElementById('flash-overlay');
@@ -670,10 +695,9 @@ class Game {
         this.reset();
         this.bindEvents();
         window.addEventListener('resize', () => {
-            this.width = window.innerWidth; this.height = window.innerHeight;
-            this.canvas.width = this.width; this.canvas.height = this.height;
-            this.initParticles();
-            if(!this.running) this.drawStaticBackground();
+             this.resize();
+             this.initParticles();
+             if(!this.running) this.drawStaticBackground();
         });
         this.drawStaticBackground();
         GoogleSheetAPI.init();
@@ -685,6 +709,14 @@ class Game {
             window.addEventListener(evt, this.resetIdleTimer)
         );
         this.resetIdleTimer();
+    }
+    
+    resize() {
+        const wrapper = document.getElementById('game-wrapper');
+        this.width = wrapper.clientWidth;
+        this.height = wrapper.clientHeight;
+        this.canvas.width = this.width;
+        this.canvas.height = this.height;
     }
 
     resetIdleTimer() {
@@ -712,7 +744,14 @@ class Game {
     bindEvents() {
         const moveHandler = (x) => {
             if(!this.running) return;
-            this.paddle.x = x - this.paddle.w / 2;
+            // Get wrapper offset to calculate relative mouse position
+            const wrapper = document.getElementById('game-wrapper');
+            const rect = wrapper.getBoundingClientRect();
+            const relativeX = x - rect.left;
+
+            this.paddle.x = relativeX - this.paddle.w / 2;
+            
+            // Clamp
             if(this.paddle.x < 0) this.paddle.x = 0;
             if(this.paddle.x + this.paddle.w > this.width) this.paddle.x = this.width - this.paddle.w;
         };
@@ -721,8 +760,16 @@ class Game {
     }
 
     reset() {
-        this.running = false; this.score = 0; this.combo = 0; this.difficultyLevel = 1;
-        this.lastBrickSpawnTime = 0; this.lastShotTime = 0; this.brickSpeed = 0.1;
+        this.running = false; 
+        this.score = 0; 
+        // Ensure HUD score is reset to 0 visually
+        if(this.hudScore) this.hudScore.innerText = "0";
+        
+        this.difficultyLevel = 1;
+        this.lastBrickSpawnTime = 0; 
+        this.lastShotTime = 0; 
+        this.brickSpeed = 0.1;
+        
         const paddleY = this.height - 120;
         this.paddle = { w: 100, h: 15, x: this.width/2 - 50, y: paddleY, color: '#00c3ff', state: 'cover' }; // Cyan
         
@@ -747,6 +794,9 @@ class Game {
         document.getElementById('ticketScreen').classList.add('hidden');
         document.getElementById('leaderboardModal').classList.remove('active');
         
+        // GA Event
+        gtag('event', 'game_start');
+
         this.reset();
         this.running = true;
         
@@ -764,6 +814,9 @@ class Game {
     start() { this.showInstructions(); }
 
     replay() {
+        // GA Event
+        gtag('event', 'replay');
+
         this.running = false;
         document.getElementById('instructionScreen').classList.add('hidden');
         document.getElementById('startScreen').classList.remove('hidden');
@@ -771,6 +824,7 @@ class Game {
         document.getElementById('ticketScreen').classList.add('hidden');
         document.getElementById('leaderboardModal').classList.remove('active');
         GoogleSheetAPI.fetchLeaderboard();
+        this.reset(); // Reset internal state
         this.drawStaticBackground();
     }
 
@@ -794,6 +848,13 @@ class Game {
         this.running = false;
         this.audio.playGameOver();
         document.getElementById('finalScore').innerText = this.score;
+        
+        // GA Event
+        gtag('event', 'level_end', {
+            'score': this.score,
+            'reason': reason
+        });
+
         // No reason display anymore
         document.getElementById('formScreen').classList.remove('hidden');
         const btn = document.getElementById('submitBtn');
@@ -870,7 +931,15 @@ class Game {
             if(hit) {
                 ball.y = this.paddle.y - ball.r - 1; 
                 ball.dy = -Math.abs(ball.speed); 
-                ball.dx = (ball.x - (this.paddle.x + this.paddle.w/2)) * 0.2;
+                
+                const hitPoint = ball.x - (this.paddle.x + this.paddle.w/2);
+                ball.dx = hitPoint * 0.2;
+                
+                // --- ANTI-STUCK FIX (Horizontal Velocity Check) ---
+                if (Math.abs(ball.dx) < 1.5) {
+                    ball.dx = (ball.dx >= 0 ? 1 : -1) * 2.0; // Force minimum horizontal speed
+                }
+
                 this.audio.playPaddle(); this.createParticles(ball.x, ball.y, '#fff');
             }
 
@@ -927,6 +996,11 @@ class Game {
     activatePowerUp(type) {
         this.audio.playPowerUp(); this.createFloatText(type.toUpperCase(), this.paddle.x, this.paddle.y - 50);
         
+        // GA Event for Powerup
+        gtag('event', 'power_up', {
+            'type': type
+        });
+
         if (type === 'nuke') {
             // V6.0 Nuke Logic
             this.audio.playNuke();
