@@ -516,7 +516,7 @@
                 
                 <div class="ticket-body">
                     <div class="ticket-qr">
-                        <img src="LINE (7)-Photoroom.png" class="w-full h-full object-contain">
+                        <img src="https://raw.githubusercontent.com/andyhhsu/Galaxy-Christmas-Challenge/main/LINE%40.png" class="w-full h-full object-contain">
                     </div>
                     <div class="ticket-info">
                         <div class="store-tag">📍 三星旗艦館 - 微風南山</div>
@@ -804,13 +804,13 @@ class Game {
         
         // V7.1: Boost Brick Speed for Mobile (1.2)
         const isMobile = window.innerWidth < 600;
-        this.brickSpeed = isMobile ? 1.2 : 1.0; // V7.1 Modified: Mobile 1.2, Desktop 1.0
+        this.brickSpeed = isMobile ? 1.2 : 1.0; 
         
         // V6.9: Detect Mobile for EVEN LOWER ball speed (2.5)
         this.baseBallSpeed = isMobile ? 2.5 : 5.0;
         
         const paddleY = this.height - 120;
-        this.paddle = { w: 100, h: 15, x: this.width/2 - 50, y: paddleY, color: '#00c3ff', state: 'cover' }; // Cyan
+        this.paddle = { w: 100, h: 24, x: this.width/2 - 50, y: paddleY, color: '#00c3ff', state: 'cover' }; // Cyan
         
         // V6.0 Multi-ball support
         this.balls = [];
