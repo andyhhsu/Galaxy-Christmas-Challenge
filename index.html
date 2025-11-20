@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Galaxy 聖誕挑戰</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Noto+Sans+TC:wght@300;400;700&display=swap');
+
+        body {
+            margin: 0;
+            background-color: #000;
+            font-family: 'Noto Sans TC', sans-serif;
+            overflow: hidden;
+            touch-action: none;
+            user-select: none;
+        }
+
+        /* --- 畫布與容器 (科技深空背景) --- */
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: radial-gradient(circle at 50% 120%, #0a1a3a 0%, #000000 80%);
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* --- 危機警示特效 --- */
+        #danger-overlay {
+            position: absolute;
+            bottom: 0; left: 0; width: 100%; height: 20%;
+            background: linear-gradient(to top, rgba(255, 0, 50, 0.3), transparent);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 5;
+        }
+        .danger-pulse { animation: pulseRed 1s infinite alternate; }
+        @keyframes pulseRed { from { opacity: 0.1; } to { opacity: 0.4; } }
+
+        /* --- 全螢幕閃光特效 (Nuke用) --- */
+        #flash-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: white;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 40;
+            transition: opacity 0.1s;
+        }
+
+        /* --- UI 層級 --- */
+        .ui-layer {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.85); /* 深黑半透明 */
+            backdrop-filter: blur(12px);
+            z-index: 50;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 1;
+            visibility: visible;
+            padding: 20px;
+        }
+
+        .ui-layer.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        /* --- Modal 層級 --- */
+        .modal-layer {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 60;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 60px;
+            transition: transform 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+            transform: translateY(100%);
+        }
+        .modal-layer.active { transform: translateY(0); }
+
+        /* --- HUD (科技藍) --- */
+        #hud {
+            position: absolute;
+            top: 0; left: 0; width: 100%;
+            padding: 24px;
+            display: flex;
+            justify-content: space-between;
+            pointer-events: none;
+            z-index: 10;
+        }
+        .hud-item { text-align: center; }
+        .hud-label { font-size: 10px; color: #00c3ff; letter-spacing: 2px; font-family: 'Orbitron'; opacity: 0.8; }
+        .hud-value { font-family: 'Orbitron', sans-serif; font-size: 28px; color: white; font-weight: bold; text-shadow: 0 0 10px rgba(0, 195, 255, 0.5); }
+
+        /* --- 排行榜樣式 (極簡科技風) --- */
+        .lb-container-mini {
+            width: 100%; max-width: 340px;
+            background: rgba(10, 20, 40, 0.6);
+            border: 1px solid rgba(0, 195, 255, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 0 30px rgba(0, 195, 255, 0.05);
+            backdrop-filter: blur(5px);
+        }
+        
+        .lb-container-full {
+            width: 95%; max-width: 420px;
+            height: 65vh;
+            overflow-y: auto;
+            background: rgba(10, 15, 20, 0.8);
+            border: 1px solid #333;
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+
+        .lb-title { color: #00c3ff; font-size: 14px; letter-spacing: 2px; margin-bottom: 15px; text-align: center; font-weight: bold; }
+
+        .lb-row {
+            display: flex; justify-content: space-between; align-items: center;
+            color: #aaa; font-size: 14px; padding: 10px 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            font-family: 'Orbitron', sans-serif;
+            transition: background 0.2s;
+        }
+        
+        .lb-row.highlight {
+            background: linear-gradient(90deg, rgba(0, 195, 255, 0.15), transparent);
+            border-left: 3px solid #00c3ff;
+            color: white;
+        }
+
+        .rank-1 { color: #ffd700 !important; font-weight: 900; text-shadow: 0 0 15px rgba(255, 215, 0, 0.4); font-size: 1.1em; }
+        .rank-2 { color: #e0e0e0 !important; font-weight: bold; }
+        .rank-3 { color: #c58f60 !important; font-weight: bold; }
+
+        /* --- 按鈕 (Samsung Flagship Style) --- */
+        .btn-primary {
+            background: #000;
+            border: 1px solid #00c3ff;
+            padding: 16px 40px;
+            color: #00c3ff;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: bold;
+            font-size: 18px;
+            letter-spacing: 2px;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(0, 195, 255, 0.2);
+            transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+            text-transform: uppercase;
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-primary::after {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 195, 255, 0.2), transparent);
+            transition: 0.5s;
+        }
+
+        .btn-primary:hover {
+            background: #00c3ff;
+            color: #000;
+            box-shadow: 0 0 30px rgba(0, 195, 255, 0.6);
+        }
+        
+        .btn-primary:hover::after { left: 100%; }
+        .btn-primary:active { transform: scale(0.98); }
+        
+        /* Attract Loop Animation (Subtle Pulse) */
+        .btn-attract {
+            animation: neonPulse 2s infinite ease-in-out;
+            border-width: 2px;
+            text-shadow: 0 0 10px rgba(0, 195, 255, 0.8);
+        }
+        @keyframes neonPulse {
+            0% { box-shadow: 0 0 5px rgba(0, 195, 255, 0.3); transform: scale(1); }
+            50% { box-shadow: 0 0 25px rgba(0, 195, 255, 0.8), 0 0 50px rgba(0, 195, 255, 0.4); transform: scale(1.05); border-color: #fff; color: #fff; }
+            100% { box-shadow: 0 0 5px rgba(0, 195, 255, 0.3); transform: scale(1); }
+        }
+        
+        .btn-secondary {
+            background: transparent; border: 1px solid #444; padding: 12px;
+            color: #888; font-size: 14px; border-radius: 50px;
+            cursor: pointer; margin-top: 12px; width: 100%; transition: all 0.2s;
+            letter-spacing: 1px;
+        }
+        .btn-secondary:hover { border-color: white; color: white; }
+        
+        .btn-text {
+            background: none; border: none; color: #666; font-size: 12px;
+            text-decoration: none; cursor: pointer; margin-top: 15px;
+            transition: color 0.2s; letter-spacing: 1px;
+        }
+        .btn-text:hover { color: #00c3ff; text-decoration: underline; }
+
+        input.glass-input {
+            background: rgba(0, 0, 0, 0.5); 
+            border: 1px solid #333;
+            padding: 14px; width: 100%; 
+            color: white; border-radius: 8px; margin-bottom: 12px; 
+            outline: none; font-family: 'Noto Sans TC';
+            transition: border-color 0.3s;
+        }
+        input.glass-input:focus { border-color: #00c3ff; }
+
+        /* --- 旗艦兌換券 (Black Card Style) --- */
+        .flagship-ticket {
+            position: relative;
+            background: #080808;
+            background-image: linear-gradient(0deg, transparent 24%, rgba(255, 255, 255, .02) 25%, rgba(255, 255, 255, .02) 26%, transparent 27%, transparent 74%, rgba(255, 255, 255, .02) 75%, rgba(255, 255, 255, .02) 76%, transparent 77%, transparent), linear-gradient(90deg, transparent 24%, rgba(255, 255, 255, .02) 25%, rgba(255, 255, 255, .02) 26%, transparent 27%, transparent 74%, rgba(255, 255, 255, .02) 75%, rgba(255, 255, 255, .02) 76%, transparent 77%, transparent);
+            background-size: 50px 50px;
+            border: 1px solid #333;
+            border-radius: 16px;
+            padding: 24px;
+            width: 100%;
+            max-width: 360px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+            overflow: hidden;
+            margin-bottom: 24px;
+        }
+        .flagship-ticket::after {
+            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+            background: linear-gradient(to bottom right, rgba(255,255,255,0) 40%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0) 60%);
+            transform: rotate(30deg);
+            pointer-events: none;
+        }
+
+        .ticket-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #222; }
+        .ticket-logo { color: #fff; font-weight: 900; font-size: 14px; letter-spacing: 3px; font-family: 'Orbitron'; }
+        .ticket-sub { color: #00c3ff; font-size: 10px; letter-spacing: 1px; margin-top: 4px; }
+        .ticket-score-val { color: #fff; font-family: 'Orbitron'; font-size: 32px; line-height: 1; text-shadow: 0 0 10px rgba(255,255,255,0.3); }
+        
+        .ticket-body { display: flex; gap: 20px; align-items: center; position: relative; z-index: 2; }
+        .ticket-qr { width: 90px; height: 90px; background: white; padding: 5px; border-radius: 8px; flex-shrink: 0; }
+        .ticket-info h3 { color: #fff; font-size: 16px; font-weight: bold; margin-bottom: 6px; letter-spacing: 1px; }
+        .ticket-info p { color: #888; font-size: 12px; margin-bottom: 10px; line-height: 1.4; }
+        .store-tag { display: inline-block; border: 1px solid #00c3ff; color: #00c3ff; font-size: 10px; font-weight: bold; padding: 4px 8px; border-radius: 4px; letter-spacing: 1px; }
+
+        /* --- 任務說明頁 (Tech Grid Style) --- */
+        .instruction-box {
+            background: rgba(10, 12, 16, 0.9);
+            border: 1px solid #333;
+            border-left: 3px solid #00c3ff;
+            border-radius: 8px;
+            padding: 16px;
+            width: 100%;
+            max-width: 420px;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        .inst-title { color: #fff; font-weight: bold; font-size: 14px; margin-bottom: 8px; letter-spacing: 2px; font-family: 'Orbitron'; }
+        .inst-list { font-size: 14px; color: #ccc; list-style: none; padding: 0; line-height: 1.6; }
+        .inst-list li::before { content: ">> "; color: #00c3ff; }
+        
+        .inst-icons { display: flex; justify-content: space-between; margin-top: 15px; border-top: 1px solid #222; padding-top: 10px; }
+        .inst-icon-item { text-align: center; width: 18%; }
+        .inst-icon-emoji { font-size: 24px; margin-bottom: 4px; display: block; filter: drop-shadow(0 0 5px rgba(0,195,255,0.5)); }
+        .inst-icon-text { font-size: 10px; color: #888; line-height: 1.2; }
+        
+        /* Powerup Icons */
+        .inst-icon-emoji.nuke { filter: drop-shadow(0 0 8px #ef4444); }
+        .inst-icon-emoji.multi { filter: drop-shadow(0 0 8px #22c55e); }
+
+        .prize-box {
+            background: rgba(10, 12, 16, 0.9);
+            border: 1px solid #333;
+            border-left: 3px solid #ffd700;
+            border-radius: 8px;
+            padding: 20px;
+            width: 100%;
+            max-width: 420px;
+            margin-bottom: 10px;
+            text-align: left;
+        }
+        .prize-title { color: #ffd700; font-weight: bold; font-size: 14px; margin-bottom: 12px; letter-spacing: 2px; font-family: 'Orbitron'; }
+        .prize-item { display: flex; align-items: center; gap: 15px; margin-bottom: 10px; }
+        .prize-rank { font-family: 'Orbitron'; font-weight: bold; color: #666; width: 20px; }
+        .prize-name { color: white; font-weight: bold; font-size: 13px; }
+        .prize-desc { color: #888; font-size: 11px; }
+
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <canvas id="gameCanvas"></canvas>
+    <div id="danger-overlay"></div>
+    <div id="flash-overlay"></div>
+
+    <!-- HUD -->
+    <div id="hud">
+        <div class="hud-item">
+            <div class="hud-label">SCORE</div>
+            <div class="hud-value" id="scoreVal">0</div>
+        </div>
+        <div class="hud-item">
+            <div class="hud-label">TASKS</div>
+            <div class="hud-value" id="comboVal">0</div>
+        </div>
+    </div>
+
+    <!-- 狀態顯示 -->
+    <div id="mode-indicator" style="position:absolute; bottom:140px; left:50%; transform:translateX(-50%); opacity:0; pointer-events:none; color:#00c3ff; font-weight:bold; background:rgba(0,0,0,0.8); padding:5px 15px; border-radius:4px; font-size:12px; transition:opacity 0.3s; border:1px solid #00c3ff; font-family: 'Orbitron'; letter-spacing: 2px;">MODE</div>
+
+    <!-- 1. Start Screen -->
+    <div id="startScreen" class="ui-layer">
+        <div class="text-center mb-8 mt-4">
+            <!-- Removed SAMSUNG PRESENTS -->
+            <h1 class="text-4xl md:text-6xl font-black text-white tracking-tighter mb-1" style="font-family: 'Orbitron'; text-shadow: 0 0 20px rgba(0,195,255,0.5);">GALAXY</h1>
+            <h2 class="text-xl text-[#00c3ff] tracking-[0.3em] font-bold">聖誕挑戰</h2>
+        </div>
+        
+        <!-- Top 3 Leaderboard -->
+        <div class="lb-container-mini">
+            <div class="lb-title">RANKINGS</div>
+            <div id="top3-list" class="flex flex-col gap-2">
+                <div class="text-center text-gray-500 text-xs font-mono">LOADING_DATA...</div>
+            </div>
+            <button class="btn-text w-full text-center" onclick="api.openFullLeaderboard()">查看完整排行榜 >></button>
+        </div>
+
+        <div class="w-full max-w-xs flex flex-col items-center">
+            <button class="btn-primary btn-attract" onclick="game.showInstructions()">START</button>
+        </div>
+    </div>
+
+    <!-- 1.5 Instruction Screen -->
+    <div id="instructionScreen" class="ui-layer hidden">
+        <div class="w-full max-w-md flex justify-between items-end mb-4">
+             <h2 class="text-4xl font-bold text-white" style="font-family: 'Noto Sans TC'">遊戲說明</h2>
+             <div class="text-[#00c3ff] text-xs tracking-widest">SYSTEM READY</div>
+        </div>
+        
+        <!-- 玩法說明 -->
+        <div class="instruction-box">
+            <div class="inst-title">HOW TO PLAY</div>
+            <ul class="inst-list">
+                <li>滑動擋板，接住能量球。</li>
+                <li>擊碎上方落下的 <span class="text-red-400 font-bold">工作磚塊</span>。</li>
+                <li>接住道具觸發 Galaxy 特效：</li>
+            </ul>
+            <div class="inst-icons">
+                <div class="inst-icon-item">
+                    <div class="inst-icon-emoji">📱</div>
+                    <div class="inst-icon-text">視野展開</div>
+                </div>
+                <div class="inst-icon-item">
+                    <div class="inst-icon-emoji">🖊️</div>
+                    <div class="inst-icon-text">S Pen</div>
+                </div>
+                <div class="inst-icon-item">
+                    <div class="inst-icon-emoji">❄️</div>
+                    <div class="inst-icon-text">AI 慢動</div>
+                </div>
+                <div class="inst-icon-item">
+                    <div class="inst-icon-emoji multi">🔴</div>
+                    <div class="inst-icon-text">極限多工</div>
+                </div>
+                <div class="inst-icon-item">
+                    <div class="inst-icon-emoji nuke">🎁</div>
+                    <div class="inst-icon-text">星際轟炸</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 獎項介紹 -->
+        <div class="prize-box">
+            <div class="prize-title">REWARDS</div>
+            <div class="prize-item">
+                <div class="prize-rank text-yellow-400">01</div>
+                <div>
+                    <div class="prize-name">10,000mAh 行動電源</div>
+                </div>
+            </div>
+            <div class="prize-item">
+                <div class="prize-rank text-gray-300">02</div>
+                <div>
+                    <div class="prize-name">Snapware 康寧輕瓷保溫吸管杯</div>
+                </div>
+            </div>
+            <div class="prize-item">
+                <div class="prize-rank text-orange-400">03</div>
+                <div>
+                    <div class="prize-name">放鬆筋膜槍</div>
+                </div>
+            </div>
+        </div>
+        <div class="mb-4 text-[12px] text-[#00c3ff] text-center font-bold tracking-wide">
+            憑排行榜截圖，可至三星旗艦館-微風南山兌換神秘好禮!
+        </div>
+
+        <button class="btn-primary max-w-xs mt-2" onclick="game.startRealGame()">開始遊戲</button>
+    </div>
+
+
+    <!-- 2. Game Over / Form Screen -->
+    <div id="formScreen" class="ui-layer hidden">
+        <h2 class="text-4xl font-bold text-white mb-2" style="font-family: 'Noto Sans TC'">遊戲結束</h2>
+        
+        <div class="text-center mb-6">
+             <div class="text-gray-500 text-xs tracking-widest mb-1">最終分數</div>
+             <div class="text-white font-bold text-4xl font-mono text-shadow-blue" id="finalScore">0</div>
+        </div>
+        
+        <div class="bg-[#0a0a0a] p-6 rounded-xl w-full max-w-sm border border-gray-800 shadow-2xl">
+            <h3 class="text-white font-bold mb-6 text-center text-sm tracking-wide">登錄成績 & 參加抽獎</h3>
+            <input type="text" id="uName" class="glass-input" placeholder="姓名 / 暱稱">
+            <input type="tel" id="uPhone" class="glass-input" placeholder="手機號碼">
+            
+            <!-- 文案 -->
+            <div class="flex items-center justify-center gap-3 mb-6 bg-[#111] p-3 rounded border border-[#222]">
+                <span class="text-xl">⚡</span>
+                <div>
+                    <div class="text-sm text-white font-bold">登錄即可抽 10,000mAh 行動電源</div>
+                    <div class="text-[10px] text-gray-500">(2026/1/2抽出)</div>
+                </div>
+            </div>
+
+            <button class="btn-primary mb-3" id="submitBtn" onclick="api.submitScore()">確認送出</button>
+            <button class="btn-secondary" onclick="game.replay()">不參加，直接重玩</button>
+        </div>
+    </div>
+
+    <!-- 3. Flagship Ticket Screen -->
+    <div id="ticketScreen" class="ui-layer hidden">
+        
+        <div class="text-center mb-6">
+            <div class="text-[#00c3ff] text-4xl mb-2">✓</div>
+            <h2 class="text-xl font-bold text-white tracking-wide">上傳成功</h2>
+        </div>
+
+        <!-- Premium Ticket UI -->
+        <div class="flagship-ticket">
+            <div class="ticket-header">
+                <div>
+                    <div class="ticket-logo">CHALLENGER</div>
+                    <div class="ticket-sub" id="ticketName">PLAYER</div>
+                </div>
+                <div class="text-right">
+                    <div class="ticket-score-label">SCORE</div>
+                    <div class="ticket-score-val" id="ticketScore">0</div>
+                </div>
+            </div>
+            
+            <div class="ticket-body">
+                <div class="ticket-qr">
+                    <img src="https://raw.githubusercontent.com/andyhhsu/Galaxy-Christmas-Challenge/main/LINE%40.png" class="w-full h-full object-contain">
+                </div>
+                <div class="ticket-info">
+                    <div class="store-tag">📍 三星旗艦館 - 微風南山</div>
+                    <h3 class="mt-2">FLAGSHIP GIFT</h3>
+                    <p>憑此券兌換限定好禮</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- CTA Buttons -->
+        <div class="w-full max-w-xs flex flex-col gap-3">
+            <button class="btn-secondary border-[#00c3ff] text-[#00c3ff]" onclick="api.openFullLeaderboard()">查看排名</button>
+            <button class="btn-primary" onclick="game.replay()">再次挑戰</button>
+        </div>
+    </div>
+
+    <!-- 4. Leaderboard Modal -->
+    <div id="leaderboardModal" class="modal-layer">
+        <h2 class="text-2xl font-bold text-white mb-2" style="font-family: 'Noto Sans TC'">完整排行榜</h2>
+        <p class="text-[#00c3ff] text-xs mb-4 tracking-widest">即時戰況</p>
+        
+        <div class="lb-container-full" id="full-lb-list">
+            <!-- JS Populated -->
+        </div>
+        
+        <button class="btn-secondary max-w-xs mt-4" onclick="api.closeFullLeaderboard()">關閉</button>
+    </div>
+
+</div>
+
+<script>
+// --- Google Sheets API Manager ---
+const GoogleSheetAPI = {
+    scriptID: "AKfycbxMZm6z1_ji1Wuf-Lu7DdIv2iiD6_BqkByoV55yIFedMw0KPW3OGCYBWVLQHwIfbfg8",
+    
+    get scriptURL() {
+        return `https://script.google.com/macros/s/${this.scriptID}/exec`;
+    },
+
+    leaderboardData: [],
+    mockData: [
+        { name: "AI_AGENT", score: 15000 },
+        { name: "Z_FOLD_PRO", score: 12500 },
+        { name: "VIP_MEMBER", score: 9800 },
+        { name: "GUEST_001", score: 5000 }
+    ],
+
+    init: function() {
+        this.fetchLeaderboard();
+    },
+
+    fetchLeaderboard: async function() {
+        try {
+            const response = await fetch(this.scriptURL + "?action=get&t=" + Date.now());
+            const data = await response.json();
+            data.sort((a, b) => b.score - a.score);
+            this.leaderboardData = data;
+            this.renderTop3(data);
+        } catch (e) {
+            console.warn("API Fetch Failed", e);
+            this.leaderboardData = this.mockData;
+            this.renderTop3(this.mockData);
+        }
+    },
+
+    renderTop3: function(data) {
+        const listEl = document.getElementById('top3-list');
+        listEl.innerHTML = "";
+        const top3 = data.slice(0, 3);
+        top3.forEach((item, index) => {
+            const row = document.createElement('div');
+            row.className = `lb-row`;
+            let rankClass = index === 0 ? "rank-1" : (index === 1 ? "rank-2" : "rank-3");
+            // Using Text instead of Emoji for cleaner look in V5
+            let rankText = index === 0 ? "1ST" : (index === 1 ? "2ND" : "3RD");
+            row.innerHTML = `<div class="flex items-center gap-3 w-full"><span class="text-sm w-8 text-center ${rankClass}" style="font-family:'Orbitron'">${rankText}</span><span class="flex-1 text-left truncate font-bold text-white">${item.name}</span><span class="font-mono text-[#00c3ff]">${item.score}</span></div>`;
+            listEl.appendChild(row);
+        });
+    },
+
+    renderFullList: function(highlightName = null, highlightScore = null) {
+        const listEl = document.getElementById('full-lb-list');
+        listEl.innerHTML = "";
+        let targetElement = null;
+
+        this.leaderboardData.forEach((item, index) => {
+            const rank = index + 1;
+            const row = document.createElement('div');
+            row.className = `lb-row`;
+            
+            if (highlightName && item.name === highlightName && item.score == highlightScore) {
+                row.classList.add('highlight');
+                targetElement = row;
+            }
+
+            let rankColor = rank === 1 ? "rank-1" : (rank === 2 ? "rank-2" : (rank === 3 ? "rank-3" : ""));
+            row.innerHTML = `<span class="w-10 font-bold ${rankColor}" style="font-family:'Orbitron'">#${rank}</span><span class="flex-1 text-left truncate px-2 text-gray-300">${item.name}</span><span class="w-20 text-right font-mono text-[#00c3ff]">${item.score}</span>`;
+            listEl.appendChild(row);
+        });
+        return targetElement;
+    },
+
+    openFullLeaderboard: function() {
+        document.getElementById('leaderboardModal').classList.add('active');
+        this.renderFullList();
+    },
+
+    closeFullLeaderboard: function() {
+        document.getElementById('leaderboardModal').classList.remove('active');
+    },
+
+    submitScore: function() {
+        const name = document.getElementById('uName').value.trim();
+        const phone = document.getElementById('uPhone').value.trim();
+        const score = parseInt(document.getElementById('finalScore').innerText);
+
+        if(!name || !phone) {
+            alert('請輸入姓名與電話以便兌換獎品');
+            return;
+        }
+
+        const btn = document.getElementById('submitBtn');
+        btn.innerText = "UPLOADING...";
+        btn.disabled = true;
+
+        document.getElementById('ticketName').innerText = name;
+        document.getElementById('ticketScore').innerText = score;
+
+        const formData = new FormData();
+        formData.append('name', name);
+        formData.append('phone', phone);
+        formData.append('score', score);
+        formData.append('action', 'add');
+
+        fetch(this.scriptURL, { method: 'POST', body: formData })
+            .then(res => res.json())
+            .then(() => {
+                this.fetchLeaderboard();
+            })
+            .catch(console.error);
+
+        setTimeout(() => {
+            document.getElementById('formScreen').classList.add('hidden');
+            document.getElementById('ticketScreen').classList.remove('hidden');
+            this.leaderboardData.push({name: name, score: score}); 
+            this.leaderboardData.sort((a, b) => b.score - a.score);
+        }, 800); 
+    }
+};
+
+// --- Sound & Game Engine ---
+class SoundManager {
+    constructor() {
+        this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        this.masterGain = this.ctx.createGain();
+        this.masterGain.gain.value = 0.3; 
+        this.masterGain.connect(this.ctx.destination);
+        this.enabled = false;
+    }
+    enable() { if (this.ctx.state === 'suspended') this.ctx.resume(); this.enabled = true; }
+    playTone(freq, type, duration, slideTo) {
+        if(!this.enabled) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = type; osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+        if(slideTo) osc.frequency.exponentialRampToValueAtTime(slideTo, this.ctx.currentTime + duration);
+        gain.gain.setValueAtTime(0.5, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+        osc.connect(gain); gain.connect(this.masterGain);
+        osc.start(); osc.stop(this.ctx.currentTime + duration);
+    }
+    playHit() { this.playTone(300, 'sine', 0.1); }
+    playPaddle() { this.playTone(150, 'triangle', 0.1); }
+    playShoot() { this.playTone(800, 'square', 0.1, 200); }
+    playPowerUp() { this.playTone(400, 'sine', 0.3, 800); setTimeout(() => this.playTone(600, 'sine', 0.3, 1200), 100); }
+    playBreak() { this.playTone(100, 'sawtooth', 0.1); }
+    playNuke() { this.playTone(100, 'sawtooth', 1.0, 50); }
+    playGameOver() { this.playTone(300, 'sawtooth', 1.5, 50); }
+}
+
+class Game {
+    constructor() {
+        this.canvas = document.getElementById('gameCanvas');
+        this.ctx = this.canvas.getContext('2d');
+        this.audio = new SoundManager();
+        
+        this.width = window.innerWidth; this.height = window.innerHeight;
+        this.canvas.width = this.width; this.canvas.height = this.height;
+
+        this.hudScore = document.getElementById('scoreVal');
+        this.hudCombo = document.getElementById('comboVal');
+        this.modeIndicator = document.getElementById('mode-indicator');
+        this.dangerOverlay = document.getElementById('danger-overlay');
+        this.flashOverlay = document.getElementById('flash-overlay');
+        
+        // Digital Particles (Blue Squares)
+        this.particles = [];
+        this.initParticles();
+
+        this.reset();
+        this.bindEvents();
+        window.addEventListener('resize', () => {
+            this.width = window.innerWidth; this.height = window.innerHeight;
+            this.canvas.width = this.width; this.canvas.height = this.height;
+            this.initParticles();
+            if(!this.running) this.drawStaticBackground();
+        });
+        this.drawStaticBackground();
+        GoogleSheetAPI.init();
+
+        // Idle Timer
+        this.idleTime = null;
+        this.resetIdleTimer = this.resetIdleTimer.bind(this);
+        ['mousemove', 'mousedown', 'keypress', 'touchmove', 'click'].forEach(evt => 
+            window.addEventListener(evt, this.resetIdleTimer)
+        );
+        this.resetIdleTimer();
+    }
+
+    resetIdleTimer() {
+        clearTimeout(this.idleTime);
+        this.idleTime = setTimeout(() => {
+            if (document.getElementById('startScreen').classList.contains('hidden')) {
+                this.replay();
+            }
+        }, 15000);
+    }
+
+    initParticles() {
+        this.bgParticles = [];
+        for(let i=0; i<40; i++) {
+            this.bgParticles.push({
+                x: Math.random() * this.width,
+                y: Math.random() * this.height,
+                size: Math.random() * 2 + 1,
+                speed: Math.random() * 0.5 + 0.2,
+                alpha: Math.random() * 0.5
+            });
+        }
+    }
+
+    bindEvents() {
+        const moveHandler = (x) => {
+            if(!this.running) return;
+            this.paddle.x = x - this.paddle.w / 2;
+            if(this.paddle.x < 0) this.paddle.x = 0;
+            if(this.paddle.x + this.paddle.w > this.width) this.paddle.x = this.width - this.paddle.w;
+        };
+        this.canvas.addEventListener('mousemove', e => moveHandler(e.clientX));
+        this.canvas.addEventListener('touchmove', e => { e.preventDefault(); moveHandler(e.touches[0].clientX); }, { passive: false });
+    }
+
+    reset() {
+        this.running = false; this.score = 0; this.combo = 0; this.difficultyLevel = 1;
+        this.lastBrickSpawnTime = 0; this.lastShotTime = 0; this.brickSpeed = 0.1;
+        const paddleY = this.height - 120;
+        this.paddle = { w: 100, h: 15, x: this.width/2 - 50, y: paddleY, color: '#00c3ff', state: 'cover' }; // Cyan
+        
+        // V6.0 Multi-ball support
+        this.balls = [];
+        this.balls.push({ x: this.width/2, y: paddleY - 20, r: 8, dx: 0, dy: 0, speed: 5.0, active: false, prevY: paddleY - 20 }); // V6.1 Speed 5.0
+        
+        this.bricks = []; this.particles = []; this.powerUps = []; this.bullets = [];
+        this.aiMode = false; this.spenMode = false;
+        this.dangerOverlay.classList.remove('danger-pulse');
+    }
+
+    showInstructions() {
+        document.getElementById('startScreen').classList.add('hidden');
+        document.getElementById('instructionScreen').classList.remove('hidden');
+    }
+
+    startRealGame() {
+        this.audio.enable(); this.audio.playPowerUp();
+        document.getElementById('instructionScreen').classList.add('hidden');
+        document.getElementById('formScreen').classList.add('hidden'); 
+        document.getElementById('ticketScreen').classList.add('hidden');
+        document.getElementById('leaderboardModal').classList.remove('active');
+        
+        this.reset();
+        this.running = true;
+        
+        if(this.balls.length > 0) {
+            this.balls[0].active = true;
+            this.balls[0].dy = -this.balls[0].speed;
+            this.balls[0].dx = (Math.random() - 0.5) * 6;
+        }
+        
+        this.spawnBrickRow(3, 0); 
+        this.loop();
+    }
+
+    // Alias for start (for button compatibility)
+    start() { this.showInstructions(); }
+
+    replay() {
+        this.running = false;
+        document.getElementById('instructionScreen').classList.add('hidden');
+        document.getElementById('startScreen').classList.remove('hidden');
+        document.getElementById('formScreen').classList.add('hidden');
+        document.getElementById('ticketScreen').classList.add('hidden');
+        document.getElementById('leaderboardModal').classList.remove('active');
+        GoogleSheetAPI.fetchLeaderboard();
+        this.drawStaticBackground();
+    }
+
+    spawnBrickRow(count = 1, startY = null) {
+        const cols = Math.floor(this.width / 60);
+        const offset = (this.width - (cols * 55)) / 2;
+        for(let r=0; r<count; r++) {
+            for(let c=0; c<cols; c++) {
+                if(Math.random() > 0.85) continue; 
+                // Cyberpunk Colors
+                const types = ['#00c3ff', '#0062cc', '#7c3aed', '#ffffff']; // Cyan, Blue, Purple, White
+                const color = types[Math.floor(Math.random() * types.length)];
+                const yPos = startY !== null ? startY + r * 30 : -40 + r * 30;
+                this.bricks.push({ x: offset + c * 55, y: yPos, w: 50, h: 20, status: 1, color: color });
+            }
+        }
+    }
+
+    gameOver(reason) {
+        if(!this.running) return;
+        this.running = false;
+        this.audio.playGameOver();
+        document.getElementById('finalScore').innerText = this.score;
+        // No reason display anymore
+        document.getElementById('formScreen').classList.remove('hidden');
+        const btn = document.getElementById('submitBtn');
+        btn.innerText = "確認送出";
+        btn.disabled = false;
+    }
+
+    update() {
+        // BG Particles update
+        this.bgParticles.forEach(p => {
+            p.y += p.speed;
+            if(p.y > this.height) { p.y = -5; p.x = Math.random() * this.width; }
+        });
+        
+        const currentBallSpeed = 4.0 + Math.min(4.0, this.score / 8000);
+        this.balls.forEach(ball => ball.speed = currentBallSpeed);
+
+        this.brickSpeed = 0.1 + Math.min(1.4, this.score / 20000); 
+        
+        // FASTER SPAWN RATE
+        if(Date.now() - this.lastBrickSpawnTime > 4000 - (this.difficultyLevel * 150)) {
+            this.spawnBrickRow(1); this.lastBrickSpawnTime = Date.now();
+            if(this.difficultyLevel < 20) this.difficultyLevel++;
+        }
+        
+        if(this.spenMode) {
+            const now = Date.now();
+            if(now - this.lastShotTime > 200) { this.shootBullet(); this.lastShotTime = now; }
+        }
+
+        let danger = false;
+        this.bricks.forEach(b => {
+            if(b.status === 1) {
+                b.y += this.brickSpeed * (this.aiMode ? 0.5 : 1);
+                if(b.y + b.h > this.paddle.y - 150) danger = true;
+                if(b.y > this.height) b.status = 0; 
+            }
+        });
+        if(danger) this.dangerOverlay.classList.add('danger-pulse'); else this.dangerOverlay.classList.remove('danger-pulse');
+
+        // --- Multi-ball Logic ---
+        // Check game over only if NO balls left
+        if (this.balls.length === 0 && this.running) {
+             this.gameOver("SIGNAL LOST");
+        }
+
+        this.balls.forEach((ball, index) => {
+            if (!ball.active) return;
+
+            ball.prevY = ball.y;
+            ball.x += ball.dx * (this.aiMode ? 0.6 : 1);
+            ball.y += ball.dy * (this.aiMode ? 0.6 : 1);
+
+            const maxSpeed = 14;
+            if(ball.dy > maxSpeed) ball.dy = maxSpeed;
+            if(ball.dy < -maxSpeed) ball.dy = -maxSpeed;
+
+            if(ball.x + ball.r > this.width || ball.x - ball.r < 0) { ball.dx *= -1; this.audio.playHit(); }
+            if(ball.y - ball.r < 0) { ball.y = ball.r; ball.dy = Math.abs(ball.dy); this.audio.playHit(); }
+            
+            // Remove ball if falls
+            if(ball.y > this.height) {
+                this.balls.splice(index, 1);
+            }
+
+            let hit = false;
+            if(ball.dy > 0 && ball.x > this.paddle.x && ball.x < this.paddle.x + this.paddle.w) {
+                if(ball.y + ball.r >= this.paddle.y && ball.prevY + ball.r <= this.paddle.y + Math.abs(ball.dy) + 10) hit = true;
+            }
+            if(!hit && ball.dy > 0) {
+                 if (ball.x + ball.r > this.paddle.x && ball.x - ball.r < this.paddle.x + this.paddle.w &&
+                     ball.y + ball.r > this.paddle.y && ball.y - ball.r < this.paddle.y + this.paddle.h) hit = true;
+            }
+            if(hit) {
+                ball.y = this.paddle.y - ball.r - 1; 
+                ball.dy = -Math.abs(ball.speed); 
+                ball.dx = (ball.x - (this.paddle.x + this.paddle.w/2)) * 0.2;
+                this.audio.playPaddle(); this.createParticles(ball.x, ball.y, '#fff');
+            }
+
+            this.bricks.forEach(b => {
+                if(b.status === 1 && ball.x > b.x && ball.x < b.x+b.w && ball.y > b.y && ball.y < b.y+b.h) {
+                    ball.dy *= -1; this.destroyBrick(b);
+                }
+            });
+        });
+
+        this.powerUps.forEach((p, i) => {
+            p.y += 3;
+            if(p.y + 15 > this.paddle.y && p.y - 15 < this.paddle.y + this.paddle.h && p.x > this.paddle.x && p.x < this.paddle.x + this.paddle.w) {
+                this.activatePowerUp(p.type); this.powerUps.splice(i, 1);
+            }
+            if(p.y > this.height) this.powerUps.splice(i, 1);
+        });
+
+        this.bullets.forEach((b, i) => {
+            b.y -= 15; 
+            this.bricks.forEach(brick => {
+                if(brick.status === 1 && b.x > brick.x && b.x < brick.x + brick.w && b.y > brick.y && b.y < brick.y + brick.h) {
+                    this.destroyBrick(brick); this.bullets.splice(i, 1);
+                }
+            });
+            if(b.y < 0) this.bullets.splice(i, 1);
+        });
+
+        this.particles.forEach((p, i) => { p.x += p.dx; p.y += p.dy; p.life -= 0.05; if(p.life <= 0) this.particles.splice(i, 1); });
+        this.bricks = this.bricks.filter(b => b.status === 1);
+    }
+
+    destroyBrick(b) {
+        b.status = 0; this.score += 100; this.hudScore.innerText = this.score;
+        this.audio.playBreak(); this.createParticles(b.x + b.w/2, b.y + b.h/2, b.color);
+        
+        // V6.0 Power-up Drop Rates
+        if(Math.random() < 0.2) { // 20% total drop rate
+            const rand = Math.random();
+            let type = 'expand'; // default
+            
+            if (rand < 0.05) type = 'nuke'; // ~1% total (Very Rare)
+            else if (rand < 0.20) type = 'multiball'; // ~3% total (Rare)
+            else {
+                // ~16% common
+                const commonTypes = ['expand', 'spen', 'ai'];
+                type = commonTypes[Math.floor(Math.random() * commonTypes.length)];
+            }
+            
+            this.powerUps.push({ x: b.x + b.w/2, y: b.y, type: type });
+        }
+    }
+
+    activatePowerUp(type) {
+        this.audio.playPowerUp(); this.createFloatText(type.toUpperCase(), this.paddle.x, this.paddle.y - 50);
+        
+        if (type === 'nuke') {
+            // V6.0 Nuke Logic
+            this.audio.playNuke();
+            this.flashOverlay.style.opacity = '1';
+            setTimeout(() => this.flashOverlay.style.opacity = '0', 500); // Flash effect
+            
+            this.bricks.forEach(b => {
+                if(b.status === 1) {
+                    b.status = 0;
+                    this.score += 50; // Bonus score for nuking
+                    this.createParticles(b.x + b.w/2, b.y + b.h/2, '#fff');
+                }
+            });
+            this.hudScore.innerText = this.score;
+        }
+        else if (type === 'multiball') {
+            // V6.0 Multi-ball Logic
+            // Spawn 2 extra balls from paddle
+            for(let i=0; i<2; i++) {
+                this.balls.push({
+                    x: this.paddle.x + this.paddle.w/2,
+                    y: this.paddle.y - 20,
+                    r: 8,
+                    dx: (Math.random() - 0.5) * 8,
+                    dy: -Math.abs(this.balls[0] ? this.balls[0].speed : 5.0),
+                    speed: this.balls[0] ? this.balls[0].speed : 5.0,
+                    active: true
+                });
+            }
+        }
+        else if(type === 'expand') {
+            const oldW = this.paddle.w;
+            let newW = this.paddle.state === 'cover' ? 180 : 300;
+            this.paddle.state = this.paddle.state === 'cover' ? 'main' : 'trifold';
+            this.paddle.color = this.paddle.state === 'main' ? '#00c3ff' : '#7c3aed'; // Blue then Purple
+            this.paddle.x -= (newW - oldW) / 2; this.paddle.w = newW;
+            if(this.paddle.x < 0) this.paddle.x = 0; 
+            if(this.paddle.x + this.paddle.w > this.width) this.paddle.x = this.width - this.paddle.w;
+
+            setTimeout(() => {
+                const currentW = this.paddle.w; this.paddle.x += (currentW - 100) / 2; 
+                this.paddle.w = 100; this.paddle.state = 'cover'; this.paddle.color = '#00c3ff';
+            }, 10000);
+        } else if(type === 'spen') {
+            this.spenMode = true; this.modeIndicator.innerText = "S PEN: RAPID FIRE"; this.modeIndicator.className = 'active-spen'; this.modeIndicator.style.opacity = '1';
+            setTimeout(() => { this.spenMode = false; this.modeIndicator.style.opacity = '0'; }, 5000);
+        } else if(type === 'ai') {
+            this.aiMode = true; this.modeIndicator.innerText = "AI ASSIST: SLOW MOTION"; this.modeIndicator.className = 'active-ai'; this.modeIndicator.style.opacity = '1';
+            setTimeout(() => { this.aiMode = false; this.modeIndicator.style.opacity = '0'; }, 8000);
+        }
+    }
+
+    shootBullet() {
+        this.audio.playShoot();
+        this.bullets.push({ x: this.paddle.x + 10, y: this.paddle.y, w: 4, h: 15 });
+        this.bullets.push({ x: this.paddle.x + this.paddle.w - 14, y: this.paddle.y, w: 4, h: 15 });
+    }
+
+    createParticles(x, y, color) {
+        for(let i=0; i<8; i++) this.particles.push({ x: x, y: y, dx: (Math.random()-0.5)*5, dy: (Math.random()-0.5)*5, life: 1, color: color });
+    }
+    createFloatText(text, x, y) {
+        const div = document.createElement('div'); div.innerText = text; div.style.position = 'absolute'; div.style.left = x + 'px'; div.style.top = y + 'px'; div.style.color = '#fff'; div.style.fontWeight = 'bold'; div.style.fontSize = '20px'; div.style.textShadow = '0 0 10px #00c3ff'; div.style.pointerEvents = 'none'; div.style.transition = 'all 1s';
+        document.body.appendChild(div);
+        requestAnimationFrame(() => { div.style.top = (y - 100) + 'px'; div.style.opacity = 0; }); setTimeout(() => div.remove(), 1000);
+    }
+    drawStaticBackground() {
+        // Just draw the background elements without updating logic
+        this.ctx.fillStyle = '#000'; 
+        this.ctx.fillRect(0, 0, this.width, this.height);
+        
+        // Draw BG Particles
+        this.ctx.fillStyle = 'rgba(0, 195, 255, 0.5)';
+        if(this.bgParticles) {
+            this.bgParticles.forEach(p => {
+                this.ctx.globalAlpha = p.alpha;
+                this.ctx.fillRect(p.x, p.y, p.size, p.size); 
+                this.ctx.globalAlpha = 1;
+            });
+        }
+    }
+    draw() {
+        this.ctx.fillStyle = '#000'; this.ctx.fillRect(0, 0, this.width, this.height); // clear
+        
+        // Draw BG Particles
+        this.ctx.fillStyle = 'rgba(0, 195, 255, 0.5)';
+        this.bgParticles.forEach(p => {
+            this.ctx.globalAlpha = p.alpha;
+            this.ctx.fillRect(p.x, p.y, p.size, p.size); // Square pixels
+            this.ctx.globalAlpha = 1;
+        });
+
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.3)'; this.ctx.fillRect(0, 0, this.width, this.height);
+        // Tech line
+        this.ctx.strokeStyle = 'rgba(0, 195, 255, 0.3)'; this.ctx.beginPath(); this.ctx.setLineDash([5, 15]); this.ctx.moveTo(0, this.paddle.y - 10); this.ctx.lineTo(this.width, this.paddle.y - 10); this.ctx.stroke(); this.ctx.setLineDash([]);
+        
+        this.ctx.fillStyle = this.paddle.color; this.ctx.shadowBlur = 20; this.ctx.shadowColor = this.paddle.color; this.ctx.fillRect(this.paddle.x, this.paddle.y, this.paddle.w, this.paddle.h); this.ctx.shadowBlur = 0; this.ctx.fillStyle = '#fff'; this.ctx.fillRect(this.paddle.x + 10, this.paddle.y+5, this.paddle.w - 20, 2);
+        
+        // Draw all balls
+        this.balls.forEach(ball => {
+            if(ball.active) {
+                this.ctx.beginPath(); this.ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI*2); this.ctx.fillStyle = '#fff'; this.ctx.fill();
+                this.ctx.shadowBlur = 10; this.ctx.shadowColor = '#fff'; this.ctx.fill(); this.ctx.shadowBlur = 0;
+            }
+        });
+
+        this.bricks.forEach(b => {
+            this.ctx.fillStyle = b.color; this.ctx.fillRect(b.x, b.y, b.w, b.h); this.ctx.fillStyle = 'rgba(255,255,255,0.2)'; this.ctx.fillRect(b.x, b.y, b.w, b.h/2);
+        });
+        this.powerUps.forEach(p => {
+            this.ctx.beginPath(); this.ctx.arc(p.x, p.y - 5, 20, 0, Math.PI*2); this.ctx.fillStyle = 'rgba(0,0,0,0.5)'; this.ctx.fill();
+            
+            let strokeColor = '#fff';
+            if (p.type === 'nuke') strokeColor = '#ef4444'; // Red
+            else if (p.type === 'multiball') strokeColor = '#22c55e'; // Green
+            else if (p.type === 'expand') strokeColor = '#00c3ff';
+            else if (p.type === 'spen') strokeColor = '#ffff00';
+            else if (p.type === 'ai') strokeColor = '#ff00ff';
+
+            this.ctx.lineWidth = 2; this.ctx.strokeStyle = strokeColor; this.ctx.stroke();
+            this.ctx.font = "24px Arial"; this.ctx.textAlign = "center"; this.ctx.fillStyle = "#fff";
+            
+            let icon = "?";
+            if(p.type === 'expand') icon = "📱";
+            else if(p.type === 'spen') icon = "🖊️";
+            else if(p.type === 'ai') icon = "❄️";
+            else if(p.type === 'nuke') icon = "🎁";
+            else if(p.type === 'multiball') icon = "🔴";
+
+            this.ctx.fillText(icon, p.x, p.y);
+        });
+        this.ctx.fillStyle = '#ffff00'; this.bullets.forEach(b => this.ctx.fillRect(b.x, b.y, b.w, b.h));
+        this.particles.forEach(p => { this.ctx.globalAlpha = p.life; this.ctx.fillStyle = p.color; this.ctx.beginPath(); this.ctx.arc(p.x, p.y, 3, 0, Math.PI*2); this.ctx.fill(); this.ctx.globalAlpha = 1; });
+    }
+    loop() { if(!this.running) return; this.update(); this.draw(); requestAnimationFrame(() => this.loop()); }
+}
+
+const api = GoogleSheetAPI;
+const game = new Game();
+</script>
+</body>
+</html>
