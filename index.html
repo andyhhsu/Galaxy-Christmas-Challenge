@@ -131,7 +131,7 @@
         .hud-label { font-size: 10px; color: #00c3ff; letter-spacing: 2px; font-family: 'Orbitron'; opacity: 0.9; }
         .hud-value { font-family: 'Orbitron', sans-serif; font-size: 24px; color: white; font-weight: bold; text-shadow: 0 0 10px rgba(0, 195, 255, 0.5); line-height: 1; }
 
-        /* --- 排行榜樣式 --- */
+        /* --- 排行榜樣式 (極簡科技風) --- */
         .lb-container-mini {
             width: 100%; max-width: 340px;
             background: rgba(10, 20, 40, 0.6);
@@ -174,7 +174,7 @@
         .rank-2 { color: #e0e0e0 !important; font-weight: bold; }
         .rank-3 { color: #c58f60 !important; font-weight: bold; }
 
-        /* --- 按鈕 --- */
+        /* --- 按鈕 (Samsung Flagship Style) --- */
         .btn-primary {
             background: #000;
             border: 1px solid #00c3ff;
@@ -801,9 +801,10 @@ class Game {
         this.difficultyLevel = 1;
         this.lastBrickSpawnTime = 0; 
         this.lastShotTime = 0; 
-        // V7.0: Boost Brick Speed for Mobile
+        
+        // V7.1: Boost Brick Speed for Mobile (1.2)
         const isMobile = window.innerWidth < 600;
-        this.brickSpeed = isMobile ? 1.5 : 1.0; // Mobile gets faster fall speed
+        this.brickSpeed = isMobile ? 1.2 : 1.0; // V7.1 Modified: Mobile 1.2, Desktop 1.0
         
         // V6.9: Detect Mobile for EVEN LOWER ball speed (2.5)
         this.baseBallSpeed = isMobile ? 2.5 : 5.0;
@@ -845,7 +846,8 @@ class Game {
             this.balls[0].dx = (Math.random() - 0.5) * 6;
         }
         
-        this.spawnBrickRow(3, 0); 
+        // V7.1: Quadruple Spawn (4 rows)
+        this.spawnBrickRow(4); 
         this.loop();
     }
 
@@ -916,13 +918,15 @@ class Game {
         const currentBallSpeed = this.baseBallSpeed + (speedStep * speedMult); 
         this.balls.forEach(ball => ball.speed = currentBallSpeed);
 
-        // V7.0: Faster Brick Fall Speed
-        const baseBrickSpeed = isMobile ? 1.5 : 1.0;
+        // V7.0: Faster Brick Fall Speed, V7.1: Mobile 1.2
+        const baseBrickSpeed = isMobile ? 1.2 : 1.0;
         this.brickSpeed = baseBrickSpeed + Math.min(1.4, this.score / 20000); 
         
         // FASTER SPAWN RATE
         if(Date.now() - this.lastBrickSpawnTime > 4000 - (this.difficultyLevel * 150)) {
-            this.spawnBrickRow(1); this.lastBrickSpawnTime = Date.now();
+            // V7.1: Quadruple Spawn
+            this.spawnBrickRow(4); 
+            this.lastBrickSpawnTime = Date.now();
             if(this.difficultyLevel < 20) this.difficultyLevel++;
         }
         
@@ -1107,6 +1111,68 @@ class Game {
         }
     }
 
+    drawPaddle() {
+        // Procedural Phone Drawing
+        const x = this.paddle.x;
+        const y = this.paddle.y;
+        const w = this.paddle.w;
+        const h = this.paddle.h;
+        const state = this.paddle.state;
+        
+        // 1. Draw Frame (Body)
+        this.ctx.fillStyle = '#111'; // Dark frame
+        this.ctx.shadowBlur = 15;
+        this.ctx.shadowColor = this.paddle.color;
+        this.ctx.strokeStyle = '#444'; // Metallic border
+        this.ctx.lineWidth = 2;
+        
+        this.ctx.beginPath();
+        this.ctx.roundRect(x, y, w, h, 4);
+        this.ctx.fill();
+        this.ctx.stroke();
+        this.ctx.shadowBlur = 0;
+        
+        // 2. Draw Screen(s) (Inner Glow)
+        this.ctx.fillStyle = this.paddle.color;
+        const screenMargin = 2;
+        const screenH = h - (screenMargin*2);
+        
+        if (state === 'cover') {
+            // Single Screen
+            this.ctx.fillRect(x + screenMargin, y + screenMargin, w - (screenMargin*2), screenH);
+            // Camera hole
+            this.ctx.fillStyle = '#000';
+            this.ctx.beginPath();
+            this.ctx.arc(x + w/2, y + 4, 1.5, 0, Math.PI*2);
+            this.ctx.fill();
+        } 
+        else if (state === 'main') {
+            // Dual Screen (Folded open)
+            const halfW = (w - (screenMargin*2)) / 2;
+            // Left Screen
+            this.ctx.fillRect(x + screenMargin, y + screenMargin, halfW - 0.5, screenH);
+            // Right Screen
+            this.ctx.fillRect(x + screenMargin + halfW + 1, y + screenMargin, halfW - 0.5, screenH);
+            // Hinge Line
+            this.ctx.fillStyle = '#222';
+            this.ctx.fillRect(x + w/2 - 1, y, 2, h);
+        }
+        else if (state === 'trifold') {
+            // Tri-fold Screen
+            const thirdW = (w - (screenMargin*2)) / 3;
+            // Left
+            this.ctx.fillRect(x + screenMargin, y + screenMargin, thirdW - 0.5, screenH);
+            // Middle
+            this.ctx.fillRect(x + screenMargin + thirdW + 1, y + screenMargin, thirdW - 0.5, screenH);
+            // Right
+            this.ctx.fillRect(x + screenMargin + (thirdW*2) + 2, y + screenMargin, thirdW - 0.5, screenH);
+            // Hinge Lines
+            this.ctx.fillStyle = '#222';
+            this.ctx.fillRect(x + w/3 - 1, y, 2, h);
+            this.ctx.fillRect(x + (w*2)/3 - 1, y, 2, h);
+        }
+    }
+
     shootBullet() {
         this.audio.playShoot();
         this.bullets.push({ x: this.paddle.x + 10, y: this.paddle.y, w: 4, h: 15 });
@@ -1151,7 +1217,8 @@ class Game {
         // Tech line
         this.ctx.strokeStyle = 'rgba(0, 195, 255, 0.3)'; this.ctx.beginPath(); this.ctx.setLineDash([5, 15]); this.ctx.moveTo(0, this.paddle.y - 10); this.ctx.lineTo(this.width, this.paddle.y - 10); this.ctx.stroke(); this.ctx.setLineDash([]);
         
-        this.ctx.fillStyle = this.paddle.color; this.ctx.shadowBlur = 20; this.ctx.shadowColor = this.paddle.color; this.ctx.fillRect(this.paddle.x, this.paddle.y, this.paddle.w, this.paddle.h); this.ctx.shadowBlur = 0; this.ctx.fillStyle = '#fff'; this.ctx.fillRect(this.paddle.x + 10, this.paddle.y+5, this.paddle.w - 20, 2);
+        // V7.2: Use Procedural Paddle Drawing
+        this.drawPaddle();
         
         // Draw all balls
         this.balls.forEach(ball => {
