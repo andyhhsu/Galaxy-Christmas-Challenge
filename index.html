@@ -324,6 +324,29 @@
         .prize-name { color: white; font-weight: bold; font-size: 13px; }
         .prize-desc { color: #888; font-size: 11px; }
 
+        /* 聖誕裝飾 (V6.7) */
+        .xmas-deco {
+            position: absolute;
+            pointer-events: none;
+            z-index: 45;
+        }
+        .xmas-sock {
+            top: 10%; right: 10%; font-size: 40px; transform: rotate(15deg);
+            filter: drop-shadow(0 0 10px red);
+            animation: sway 3s infinite ease-in-out alternate;
+        }
+        .xmas-ball {
+            top: 15%; left: 10%; font-size: 35px;
+            filter: drop-shadow(0 0 10px gold);
+            animation: bounce-slow 4s infinite ease-in-out;
+        }
+        .xmas-snow {
+            bottom: 5%; right: 5%; font-size: 25px; opacity: 0.7;
+        }
+
+        @keyframes sway { from { transform: rotate(10deg); } to { transform: rotate(20deg); } }
+        @keyframes bounce-slow { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+
     </style>
 </head>
 <body>
@@ -347,9 +370,16 @@
 
         <!-- 1. Start Screen -->
         <div id="startScreen" class="ui-layer">
+            
+            <!-- 聖誕裝飾 -->
+            <div class="xmas-deco xmas-sock">🧦</div>
+            <div class="xmas-deco xmas-ball">🎄</div>
+            <div class="xmas-deco xmas-snow">❄️</div>
+
             <div class="text-center mb-8 mt-4">
                 <h1 class="text-4xl md:text-6xl font-black text-white tracking-tighter mb-1" style="font-family: 'Orbitron'; text-shadow: 0 0 20px rgba(0,195,255,0.5);">GALAXY</h1>
-                <h2 class="text-xl text-[#00c3ff] tracking-[0.3em] font-bold">CHRISTMAS CHALLENGE</h2>
+                <!-- 紅色字體更新 & V6.8 不換行修正 -->
+                <h2 class="text-base md:text-xl text-red-600 tracking-[0.3em] font-bold font-orbitron mt-2 whitespace-nowrap" style="text-shadow: 0 0 10px rgba(220,38,38,0.8);">CHRISTMAS CHALLENGE</h2>
             </div>
             
             <!-- Top 3 Leaderboard -->
@@ -371,150 +401,150 @@
             <div class="w-full max-w-md flex justify-between items-end mb-4">
                  <h2 class="text-4xl font-bold text-white" style="font-family: 'Noto Sans TC'">遊戲說明</h2>
                  <div class="text-[#00c3ff] text-xs tracking-widest">SYSTEM READY</div>
-        </div>
-        
-        <!-- 玩法說明 -->
-        <div class="instruction-box">
-            <div class="inst-title">HOW TO PLAY</div>
-            <ul class="inst-list">
-                <li>滑動擋板，接住能量球。</li>
-                <li>擊碎上方落下的 <span class="text-red-400 font-bold">工作磚塊</span>。</li>
-                <li>接住道具觸發 Galaxy 特效：</li>
-            </ul>
-            <div class="inst-icons">
-                <div class="inst-icon-item">
-                    <div class="inst-icon-emoji">📱</div>
-                    <div class="inst-icon-text">視野展開</div>
-                </div>
-                <div class="inst-icon-item">
-                    <div class="inst-icon-emoji">🖊️</div>
-                    <div class="inst-icon-text">S Pen</div>
-                </div>
-                <div class="inst-icon-item">
-                    <div class="inst-icon-emoji">❄️</div>
-                    <div class="inst-icon-text">AI 慢動</div>
-                </div>
-                <div class="inst-icon-item">
-                    <div class="inst-icon-emoji multi">🔴</div>
-                    <div class="inst-icon-text">極限多工</div>
-                </div>
-                <div class="inst-icon-item">
-                    <div class="inst-icon-emoji nuke">🎁</div>
-                    <div class="inst-icon-text">星際轟炸</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 獎項介紹 -->
-        <div class="prize-box">
-            <div class="prize-title">REWARDS</div>
-            <div class="prize-item">
-                <div class="prize-rank text-yellow-400">01</div>
-                <div>
-                    <div class="prize-name">10,000mAh 行動電源</div>
-                </div>
-            </div>
-            <div class="prize-item">
-                <div class="prize-rank text-gray-300">02</div>
-                <div>
-                    <div class="prize-name">Snapware 康寧輕瓷保溫吸管杯</div>
-                </div>
-            </div>
-            <div class="prize-item">
-                <div class="prize-rank text-orange-400">03</div>
-                <div>
-                    <div class="prize-name">放鬆筋膜槍</div>
-                </div>
-            </div>
-        </div>
-        <div class="mb-4 text-[12px] text-[#00c3ff] text-center font-bold tracking-wide">
-            憑排行榜截圖，可至三星旗艦館-微風南山兌換神秘好禮!
-        </div>
-
-        <button class="btn-primary max-w-xs mt-2" onclick="game.startRealGame()">開始遊戲</button>
-    </div>
-
-
-    <!-- 2. Game Over / Form Screen -->
-    <div id="formScreen" class="ui-layer hidden">
-        <h2 class="text-4xl font-bold text-white mb-2" style="font-family: 'Noto Sans TC'">遊戲結束</h2>
-        
-        <div class="text-center mb-6">
-             <div class="text-gray-500 text-xs tracking-widest mb-1">最終分數</div>
-             <div class="text-white font-bold text-4xl font-mono text-shadow-blue" id="finalScore">0</div>
-        </div>
-        
-        <div class="bg-[#0a0a0a] p-6 rounded-xl w-full max-w-sm border border-gray-800 shadow-2xl">
-            <h3 class="text-white font-bold mb-6 text-center text-sm tracking-wide">登錄成績 & 參加抽獎</h3>
-            <input type="text" id="uName" class="glass-input" placeholder="姓名 / 暱稱">
-            <input type="tel" id="uPhone" class="glass-input" placeholder="手機號碼">
-            
-            <!-- 文案 -->
-            <div class="flex items-center justify-center gap-3 mb-6 bg-[#111] p-3 rounded border border-[#222]">
-                <span class="text-xl">⚡</span>
-                <div>
-                    <div class="text-sm text-white font-bold">登錄即可抽 10,000mAh 行動電源</div>
-                    <div class="text-[10px] text-gray-500">(2026/1/2抽出)</div>
-                </div>
-            </div>
-
-            <button class="btn-primary mb-3" id="submitBtn" onclick="api.submitScore()">確認送出</button>
-            <button class="btn-secondary" onclick="game.replay()">不參加，直接重玩</button>
-        </div>
-    </div>
-
-    <!-- 3. Flagship Ticket Screen -->
-    <div id="ticketScreen" class="ui-layer hidden">
-        
-        <div class="text-center mb-6">
-            <div class="text-[#00c3ff] text-4xl mb-2">✓</div>
-            <h2 class="text-xl font-bold text-white tracking-wide">上傳成功</h2>
-        </div>
-
-        <!-- Premium Ticket UI -->
-        <div class="flagship-ticket">
-            <div class="ticket-header">
-                <div>
-                    <div class="ticket-logo">CHALLENGER</div>
-                    <div class="ticket-sub" id="ticketName">PLAYER</div>
-                </div>
-                <div class="text-right">
-                    <div class="ticket-score-label">SCORE</div>
-                    <div class="ticket-score-val" id="ticketScore">0</div>
-                </div>
             </div>
             
-            <div class="ticket-body">
-                <div class="ticket-qr">
-                    <img src="LINE (7)-Photoroom.png" class="w-full h-full object-contain">
+            <!-- 玩法說明 -->
+            <div class="instruction-box">
+                <div class="inst-title">HOW TO PLAY</div>
+                <ul class="inst-list">
+                    <li>滑動擋板，接住能量球。</li>
+                    <li>擊碎上方落下的 <span class="text-red-400 font-bold">工作磚塊</span>。</li>
+                    <li>接住道具觸發 Galaxy 特效：</li>
+                </ul>
+                <div class="inst-icons">
+                    <div class="inst-icon-item">
+                        <div class="inst-icon-emoji">📱</div>
+                        <div class="inst-icon-text">視野展開</div>
+                    </div>
+                    <div class="inst-icon-item">
+                        <div class="inst-icon-emoji">🖊️</div>
+                        <div class="inst-icon-text">S Pen</div>
+                    </div>
+                    <div class="inst-icon-item">
+                        <div class="inst-icon-emoji">❄️</div>
+                        <div class="inst-icon-text">AI 慢動</div>
+                    </div>
+                    <div class="inst-icon-item">
+                        <div class="inst-icon-emoji multi">🔴</div>
+                        <div class="inst-icon-text">極限多工</div>
+                    </div>
+                    <div class="inst-icon-item">
+                        <div class="inst-icon-emoji nuke">🎁</div>
+                        <div class="inst-icon-text">星際轟炸</div>
+                    </div>
                 </div>
-                <div class="ticket-info">
-                    <div class="store-tag">📍 三星旗艦館 - 微風南山</div>
-                    <h3 class="mt-2">FLAGSHIP GIFT</h3>
-                    <p>憑此券兌換限定好禮</p>
+            </div>
+
+            <!-- 獎項介紹 -->
+            <div class="prize-box">
+                <div class="prize-title">REWARDS</div>
+                <div class="prize-item">
+                    <div class="prize-rank text-yellow-400">01</div>
+                    <div>
+                        <div class="prize-name">10,000mAh 行動電源</div>
+                    </div>
                 </div>
+                <div class="prize-item">
+                    <div class="prize-rank text-gray-300">02</div>
+                    <div>
+                        <div class="prize-name">Snapware 康寧輕瓷保溫吸管杯</div>
+                    </div>
+                </div>
+                <div class="prize-item">
+                    <div class="prize-rank text-orange-400">03</div>
+                    <div>
+                        <div class="prize-name">放鬆筋膜槍</div>
+                    </div>
+                </div>
+            </div>
+            <div class="mb-4 text-[12px] text-[#00c3ff] text-center font-bold tracking-wide">
+                憑排行榜截圖，可至三星旗艦館-微風南山兌換神秘好禮!
+            </div>
+
+            <button class="btn-primary max-w-xs mt-2" onclick="game.startRealGame()">開始遊戲</button>
+        </div>
+
+
+        <!-- 2. Game Over / Form Screen -->
+        <div id="formScreen" class="ui-layer hidden">
+            <h2 class="text-4xl font-bold text-white mb-2" style="font-family: 'Noto Sans TC'">遊戲結束</h2>
+            
+            <div class="text-center mb-6">
+                 <div class="text-gray-500 text-xs tracking-widest mb-1">最終分數</div>
+                 <div class="text-white font-bold text-4xl font-mono text-shadow-blue" id="finalScore">0</div>
+            </div>
+            
+            <div class="bg-[#0a0a0a] p-6 rounded-xl w-full max-w-sm border border-gray-800 shadow-2xl">
+                <h3 class="text-white font-bold mb-6 text-center text-sm tracking-wide">登錄成績 & 參加抽獎</h3>
+                <input type="text" id="uName" class="glass-input" placeholder="姓名 / 暱稱">
+                <input type="tel" id="uPhone" class="glass-input" placeholder="手機號碼">
+                
+                <!-- 文案 -->
+                <div class="flex items-center justify-center gap-3 mb-6 bg-[#111] p-3 rounded border border-[#222]">
+                    <span class="text-xl">⚡</span>
+                    <div>
+                        <div class="text-sm text-white font-bold">登錄即可抽 10,000mAh 行動電源</div>
+                        <div class="text-[10px] text-gray-500">(2026/1/2抽出)</div>
+                    </div>
+                </div>
+
+                <button class="btn-primary mb-3" id="submitBtn" onclick="api.submitScore()">確認送出</button>
+                <button class="btn-secondary" onclick="game.replay()">不參加，直接重玩</button>
             </div>
         </div>
 
-        <!-- CTA Buttons -->
-        <div class="w-full max-w-xs flex flex-col gap-3">
-            <button class="btn-secondary border-[#00c3ff] text-[#00c3ff]" onclick="api.openFullLeaderboard()">查看排名</button>
-            <button class="btn-primary" onclick="game.replay()">再次挑戰</button>
-        </div>
-    </div>
+        <!-- 3. Flagship Ticket Screen -->
+        <div id="ticketScreen" class="ui-layer hidden">
+            
+            <div class="text-center mb-6">
+                <div class="text-[#00c3ff] text-4xl mb-2">✓</div>
+                <h2 class="text-xl font-bold text-white tracking-wide">上傳成功</h2>
+            </div>
 
-    <!-- 4. Leaderboard Modal -->
-    <div id="leaderboardModal" class="modal-layer">
-        <h2 class="text-2xl font-bold text-white mb-2" style="font-family: 'Noto Sans TC'">完整排行榜</h2>
-        <p class="text-[#00c3ff] text-xs mb-4 tracking-widest">即時戰況</p>
-        
-        <div class="lb-container-full" id="full-lb-list">
-            <!-- JS Populated -->
+            <!-- Premium Ticket UI -->
+            <div class="flagship-ticket">
+                <div class="ticket-header">
+                    <div>
+                        <div class="ticket-logo">CHALLENGER</div>
+                        <div class="ticket-sub" id="ticketName">PLAYER</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="ticket-score-label">SCORE</div>
+                        <div class="ticket-score-val" id="ticketScore">0</div>
+                    </div>
+                </div>
+                
+                <div class="ticket-body">
+                    <div class="ticket-qr">
+                        <img src="https://raw.githubusercontent.com/andyhhsu/Galaxy-Christmas-Challenge/main/LINE%40.png" class="w-full h-full object-contain">
+                    </div>
+                    <div class="ticket-info">
+                        <div class="store-tag">📍 三星旗艦館 - 微風南山</div>
+                        <h3 class="mt-2">FLAGSHIP GIFT</h3>
+                        <p>憑此券兌換限定好禮</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CTA Buttons -->
+            <div class="w-full max-w-xs flex flex-col gap-3">
+                <button class="btn-secondary border-[#00c3ff] text-[#00c3ff]" onclick="api.openFullLeaderboard()">查看排名</button>
+                <button class="btn-primary" onclick="game.replay()">再次挑戰</button>
+            </div>
         </div>
-        
-        <button class="btn-secondary max-w-xs mt-4" onclick="api.closeFullLeaderboard()">關閉</button>
+
+        <!-- 4. Leaderboard Modal -->
+        <div id="leaderboardModal" class="modal-layer">
+            <h2 class="text-2xl font-bold text-white mb-2" style="font-family: 'Noto Sans TC'">完整排行榜</h2>
+            <p class="text-[#00c3ff] text-xs mb-4 tracking-widest">即時戰況</p>
+            
+            <div class="lb-container-full" id="full-lb-list">
+                <!-- JS Populated -->
+            </div>
+            
+            <button class="btn-secondary max-w-xs mt-4" onclick="api.closeFullLeaderboard()">關閉</button>
+        </div>
     </div>
-  </div>
 </div>
 
 <script>
@@ -691,6 +721,9 @@ class Game {
         // Digital Particles (Blue Squares)
         this.particles = [];
         this.initParticles();
+        
+        // V6.8: Adaptive Speed Base
+        this.baseBallSpeed = 5.0;
 
         this.reset();
         this.bindEvents();
@@ -770,12 +803,18 @@ class Game {
         this.lastShotTime = 0; 
         this.brickSpeed = 0.1;
         
+        // V6.8: Detect Mobile for lower speed
+        // If screen width < 600px, reduce base speed from 5.0 to 3.5
+        const isMobile = window.innerWidth < 600;
+        this.baseBallSpeed = isMobile ? 3.5 : 5.0;
+        
         const paddleY = this.height - 120;
         this.paddle = { w: 100, h: 15, x: this.width/2 - 50, y: paddleY, color: '#00c3ff', state: 'cover' }; // Cyan
         
         // V6.0 Multi-ball support
         this.balls = [];
-        this.balls.push({ x: this.width/2, y: paddleY - 20, r: 8, dx: 0, dy: 0, speed: 5.0, active: false, prevY: paddleY - 20 }); // V6.1 Speed 5.0
+        // V6.8: Use Adaptive base speed
+        this.balls.push({ x: this.width/2, y: paddleY - 20, r: 8, dx: 0, dy: 0, speed: this.baseBallSpeed, active: false, prevY: paddleY - 20 });
         
         this.bricks = []; this.particles = []; this.powerUps = []; this.bullets = [];
         this.aiMode = false; this.spenMode = false;
@@ -869,7 +908,10 @@ class Game {
             if(p.y > this.height) { p.y = -5; p.x = Math.random() * this.width; }
         });
         
-        const currentBallSpeed = 4.0 + Math.min(4.0, this.score / 8000);
+        // V6.7: Stepped Speed Increase (Every 10k points, speed + 1)
+        const speedStep = Math.floor(this.score / 10000);
+        // V6.8: Use adaptive base speed
+        const currentBallSpeed = this.baseBallSpeed + (speedStep * 1.0); 
         this.balls.forEach(ball => ball.speed = currentBallSpeed);
 
         this.brickSpeed = 0.1 + Math.min(1.4, this.score / 20000); 
@@ -1025,8 +1067,8 @@ class Game {
                     y: this.paddle.y - 20,
                     r: 8,
                     dx: (Math.random() - 0.5) * 8,
-                    dy: -Math.abs(this.balls[0] ? this.balls[0].speed : 5.0),
-                    speed: this.balls[0] ? this.balls[0].speed : 5.0,
+                    dy: -Math.abs(this.balls[0] ? this.balls[0].speed : this.baseBallSpeed),
+                    speed: this.balls[0] ? this.balls[0].speed : this.baseBallSpeed,
                     active: true
                 });
             }
@@ -1036,6 +1078,14 @@ class Game {
             let newW = this.paddle.state === 'cover' ? 180 : 300;
             this.paddle.state = this.paddle.state === 'cover' ? 'main' : 'trifold';
             this.paddle.color = this.paddle.state === 'main' ? '#00c3ff' : '#7c3aed'; // Blue then Purple
+            
+            // V6.8: Reduce Expansion Size (50% reduction from original increase)
+            // Base: 100
+            // Main: 160 -> 130
+            // Trifold: 240 -> 170
+            if (this.paddle.state === 'main') newW = 130; 
+            if (this.paddle.state === 'trifold') newW = 170; 
+
             this.paddle.x -= (newW - oldW) / 2; this.paddle.w = newW;
             if(this.paddle.x < 0) this.paddle.x = 0; 
             if(this.paddle.x + this.paddle.w > this.width) this.paddle.x = this.width - this.paddle.w;
