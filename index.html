@@ -324,7 +324,7 @@
         .prize-name { color: white; font-weight: bold; font-size: 13px; }
         .prize-desc { color: #888; font-size: 11px; }
 
-        /* 聖誕裝飾 (V6.7) */
+        /* 聖誕裝飾 */
         .xmas-deco {
             position: absolute;
             pointer-events: none;
@@ -378,7 +378,7 @@
 
             <div class="text-center mb-8 mt-4">
                 <h1 class="text-4xl md:text-6xl font-black text-white tracking-tighter mb-1" style="font-family: 'Orbitron'; text-shadow: 0 0 20px rgba(0,195,255,0.5);">GALAXY</h1>
-                <!-- 紅色字體更新 & V6.8 不換行修正 -->
+                <!-- 紅色字體 & V6.8 不換行修正 -->
                 <h2 class="text-base md:text-xl text-red-600 tracking-[0.3em] font-bold font-orbitron mt-2 whitespace-nowrap" style="text-shadow: 0 0 10px rgba(220,38,38,0.8);">CHRISTMAS CHALLENGE</h2>
             </div>
             
@@ -722,7 +722,7 @@ class Game {
         this.particles = [];
         this.initParticles();
         
-        // V6.8: Adaptive Speed Base
+        // V6.9: Adaptive Speed Base - further slowed for mobile
         this.baseBallSpeed = 5.0;
 
         this.reset();
@@ -803,10 +803,9 @@ class Game {
         this.lastShotTime = 0; 
         this.brickSpeed = 0.1;
         
-        // V6.8: Detect Mobile for lower speed
-        // If screen width < 600px, reduce base speed from 5.0 to 3.5
+        // V6.9: Detect Mobile for EVEN LOWER speed (2.5)
         const isMobile = window.innerWidth < 600;
-        this.baseBallSpeed = isMobile ? 3.5 : 5.0;
+        this.baseBallSpeed = isMobile ? 2.5 : 5.0;
         
         const paddleY = this.height - 120;
         this.paddle = { w: 100, h: 15, x: this.width/2 - 50, y: paddleY, color: '#00c3ff', state: 'cover' }; // Cyan
@@ -908,10 +907,12 @@ class Game {
             if(p.y > this.height) { p.y = -5; p.x = Math.random() * this.width; }
         });
         
-        // V6.7: Stepped Speed Increase (Every 10k points, speed + 1)
+        // V6.9: Stepped Speed Increase
+        const isMobile = window.innerWidth < 600;
         const speedStep = Math.floor(this.score / 10000);
-        // V6.8: Use adaptive base speed
-        const currentBallSpeed = this.baseBallSpeed + (speedStep * 1.0); 
+        // V6.9: Slower acceleration on mobile
+        const speedMult = isMobile ? 0.5 : 1.0; 
+        const currentBallSpeed = this.baseBallSpeed + (speedStep * speedMult); 
         this.balls.forEach(ball => ball.speed = currentBallSpeed);
 
         this.brickSpeed = 0.1 + Math.min(1.4, this.score / 20000); 
