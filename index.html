@@ -356,11 +356,47 @@
             margin-top: 2px;
         }
 
+        /* Music Toggle Button */
+        .music-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+            background: rgba(0,0,0,0.6);
+            border: 1px solid #333;
+            color: #00c3ff;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .music-toggle:hover { background: rgba(0, 195, 255, 0.2); border-color: #00c3ff; }
+        .music-toggle.muted { color: #555; border-color: #555; }
+
     </style>
 </head>
 <body>
 
+<!-- 聖誕背景音樂 (Jingle Bells by Kevin MacLeod, Creative Commons) -->
+<audio id="bgm" loop preload="auto">
+    <source src="https://upload.wikimedia.org/wikipedia/commons/e/e0/Jingle_Bells_by_Kevin_MacLeod.ogg" type="audio/ogg">
+    Your browser does not support the audio element.
+</audio>
+
 <div id="game-wrapper">
+    
+    <!-- Music Toggle Button (修改：onclick 改為 toggleMute) -->
+    <div class="music-toggle muted" id="musicBtn" onclick="game.audio.toggleMute()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M11 5L6 9H2v6h4l5 4V5z"></path>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+        </svg>
+    </div>
+
     <div id="game-container">
         <canvas id="gameCanvas"></canvas>
         <div id="danger-overlay"></div>
@@ -469,7 +505,7 @@
                 </div>
             </div>
             <div class="mb-4 text-[12px] text-[#00c3ff] text-center font-bold tracking-wide">
-                憑排行榜截圖，可至三星旗艦館-微風南山兌換神秘好禮!
+                憑成績登錄截圖，可至三星旗艦館-微風南山兌換神秘好禮!
             </div>
 
             <button class="btn-primary max-w-xs mt-2" onclick="game.startRealGame()">開始遊戲</button>
@@ -676,9 +712,71 @@ const GoogleSheetAPI = {
 
 // --- Game Engine ---
 class SoundManager {
-    constructor() { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); this.masterGain = this.ctx.createGain(); this.masterGain.gain.value = 0.3; this.masterGain.connect(this.ctx.destination); this.enabled = false; }
-    enable() { if (this.ctx.state === 'suspended') this.ctx.resume(); this.enabled = true; }
-    playTone(freq, type, duration, slideTo) { if(!this.enabled) return; const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain(); osc.type = type; osc.frequency.setValueAtTime(freq, this.ctx.currentTime); if(slideTo) osc.frequency.exponentialRampToValueAtTime(slideTo, this.ctx.currentTime + duration); gain.gain.setValueAtTime(0.5, this.ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration); osc.connect(gain); gain.connect(this.masterGain); osc.start(); osc.stop(this.ctx.currentTime + duration); }
+    constructor() { 
+        this.ctx = new (window.AudioContext || window.webkitAudioContext)(); 
+        this.masterGain = this.ctx.createGain(); 
+        this.masterGain.gain.value = 0.3; 
+        this.masterGain.connect(this.ctx.destination); 
+        this.enabled = false; 
+        
+        // Audio State (Combined BGM & SFX)
+        this.bgmEl = document.getElementById('bgm');
+        this.bgmPlaying = false;
+        this.muted = true; // Default muted
+    }
+    
+    enable() { 
+        if (this.ctx.state === 'suspended') this.ctx.resume(); 
+        this.enabled = true; 
+    }
+
+    // Toggle both BGM and SFX
+    toggleMute() {
+        this.muted = !this.muted;
+        const btn = document.getElementById('musicBtn');
+        
+        if (this.muted) {
+            // MUTE
+            this.bgmEl.pause();
+            this.bgmPlaying = false;
+            btn.classList.add('muted');
+            // Show Mute Icon
+            btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"></path><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>`;
+        } else {
+            // UNMUTE
+            this.bgmEl.volume = 0.4;
+            this.bgmEl.play().catch(e => console.log("Interact first"));
+            this.bgmPlaying = true;
+            btn.classList.remove('muted');
+            // Show Sound Icon
+            btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>`;
+        }
+    }
+
+    tryPlayBGM() {
+        // Only play if NOT muted
+        if (!this.muted) {
+            this.bgmEl.play().catch(e => console.log("Audio autoplay blocked"));
+        }
+    }
+
+    playTone(freq, type, duration, slideTo) { 
+        // Check global mute state
+        if(!this.enabled || this.muted) return; 
+        
+        const osc = this.ctx.createOscillator(); 
+        const gain = this.ctx.createGain(); 
+        osc.type = type; 
+        osc.frequency.setValueAtTime(freq, this.ctx.currentTime); 
+        if(slideTo) osc.frequency.exponentialRampToValueAtTime(slideTo, this.ctx.currentTime + duration); 
+        gain.gain.setValueAtTime(0.5, this.ctx.currentTime); 
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration); 
+        osc.connect(gain); 
+        gain.connect(this.masterGain); 
+        osc.start(); 
+        osc.stop(this.ctx.currentTime + duration); 
+    }
+    
     playHit() { this.playTone(300, 'sine', 0.1); }
     playPaddle() { this.playTone(150, 'triangle', 0.1); }
     playShoot() { this.playTone(800, 'square', 0.1, 200); }
@@ -747,7 +845,14 @@ class Game {
         }
     }
 
-    resize() { const wrapper = document.getElementById('game-wrapper'); this.width = wrapper.clientWidth; this.height = wrapper.clientHeight; this.canvas.width = this.width; this.canvas.height = this.height; }
+    resize() { 
+        const wrapper = document.getElementById('game-wrapper'); 
+        // Fix for black screen: Ensure we get a valid width/height
+        this.width = wrapper.clientWidth || window.innerWidth; 
+        this.height = wrapper.clientHeight || window.innerHeight; 
+        this.canvas.width = this.width; 
+        this.canvas.height = this.height; 
+    }
     resetIdleTimer() { clearTimeout(this.idleTime); this.idleTime = setTimeout(() => { if (document.getElementById('startScreen').classList.contains('hidden')) this.backToHome(); }, 15000); }
     initParticles() { this.bgParticles = []; for(let i=0; i<40; i++) this.bgParticles.push({ x: Math.random() * this.width, y: Math.random() * this.height, size: Math.random() * 2 + 1, speed: Math.random() * 0.5 + 0.2, alpha: Math.random() * 0.5 }); }
     bindEvents() {
@@ -760,25 +865,51 @@ class Game {
         this.difficultyLevel = 1; this.lastBrickSpawnTime = 0; this.lastShotTime = 0;
         const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
         this.brickSpeed = isTouch ? 1.2 : 1.0; this.baseBallSpeed = isTouch ? 2.5 : 5.0;
+        
+        // Reset paddle position based on current height
         const paddleY = this.height - 120;
         this.paddle = { w: 100, h: 24, x: this.width/2 - 50, y: paddleY, color: '#00c3ff', state: 'cover' };
+        
         this.balls = []; this.balls.push({ x: this.width/2, y: paddleY - 20, r: 8, dx: 0, dy: 0, speed: this.baseBallSpeed, active: false, prevY: paddleY - 20 });
         this.bricks = []; this.particles = []; this.powerUps = []; this.bullets = [];
         this.aiMode = false; this.spenMode = false; this.dangerOverlay.classList.remove('danger-pulse');
     }
-    showInstructions() { document.getElementById('startScreen').classList.add('hidden'); document.getElementById('instructionScreen').classList.remove('hidden'); GoogleSheetAPI.incrementPlayCount(); } 
+    showInstructions() { 
+        document.getElementById('startScreen').classList.add('hidden'); 
+        document.getElementById('instructionScreen').classList.remove('hidden'); 
+        GoogleSheetAPI.incrementPlayCount(); 
+        
+        // 在此處開啟音效引擎，但不一定播放音樂(除非使用者已開啟)
+        this.audio.enable();
+    } 
     startRealGame() { this.restartGame(); }
     start() { this.showInstructions(); }
     
     restartGame() {
-        this.audio.enable(); this.audio.playPowerUp();
+        // Fix for black screen: Force resize to ensure canvas dimensions are correct before spawning
+        this.resize();
+        
+        this.audio.enable(); 
+        this.audio.playPowerUp();
+        this.audio.tryPlayBGM(); 
+
         document.getElementById('instructionScreen').classList.add('hidden');
         document.getElementById('formScreen').classList.add('hidden'); 
         document.getElementById('ticketScreen').classList.add('hidden');
         document.getElementById('leaderboardModal').classList.remove('active');
         gtag('event', 'game_restart');
         GoogleSheetAPI.incrementPlayCount();
-        this.reset(); this.running = true; if(this.balls.length > 0) { this.balls[0].active = true; this.balls[0].dy = -this.balls[0].speed; this.balls[0].dx = (Math.random() - 0.5) * 6; } this.spawnBrickRow(4); this.loop();
+        this.reset(); this.running = true; if(this.balls.length > 0) { this.balls[0].active = true; this.balls[0].dy = -this.balls[0].speed; this.balls[0].dx = (Math.random() - 0.5) * 6; } 
+        
+        // Safeguard: Ensure we have width
+        if (this.width > 0) {
+            this.spawnBrickRow(4); 
+        } else {
+            // Fallback if width is 0 (shouldn't happen with new resize)
+            setTimeout(() => { this.resize(); this.spawnBrickRow(4); }, 100);
+        }
+        
+        this.loop();
     }
 
     backToHome() {
@@ -792,7 +923,9 @@ class Game {
     }
 
     spawnBrickRow(count = 1, startY = null) {
-        const cols = Math.floor(this.width / 60); const offset = (this.width - (cols * 55)) / 2;
+        const cols = Math.floor(this.width / 60); 
+        if(cols <= 0) return; // Prevent infinite loop or errors
+        const offset = (this.width - (cols * 55)) / 2;
         for(let r=0; r<count; r++) {
             for(let c=0; c<cols; c++) {
                 if(Math.random() > 0.85) continue; 
