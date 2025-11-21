@@ -4,575 +4,172 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Galaxy Christmas Challenge</title>
-    
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-L2MHS96YCN"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-    
       gtag('config', 'G-L2MHS96YCN');
     </script>
-
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Noto+Sans+TC:wght@300;400;700&display=swap');
-
-        body {
-            margin: 0;
-            background-color: #000;
-            font-family: 'Noto Sans TC', sans-serif;
-            overflow: hidden;
-            touch-action: none;
-            user-select: none;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-
-        /* --- 遊戲容器 --- */
-        #game-wrapper {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            max-width: 500px;
-            background: radial-gradient(circle at 50% 120%, #0a1a3a 0%, #000000 80%);
-            overflow: hidden;
-            box-shadow: 0 0 50px rgba(0,0,0,0.8);
-        }
-
-        canvas {
-            display: block;
-            width: 100%;
-            height: 100%;
-        }
-
-        /* --- 危機警示特效 --- */
-        #danger-overlay {
-            position: absolute;
-            bottom: 0; left: 0; width: 100%; height: 20%;
-            background: linear-gradient(to top, rgba(255, 0, 50, 0.3), transparent);
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.3s;
-            z-index: 5;
-        }
+        body { margin: 0; background-color: #000; font-family: 'Noto Sans TC', sans-serif; overflow: hidden; touch-action: none; user-select: none; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        #game-wrapper { position: relative; width: 100%; height: 100%; max-width: 500px; background: radial-gradient(circle at 50% 120%, #0a1a3a 0%, #000000 80%); overflow: hidden; box-shadow: 0 0 50px rgba(0,0,0,0.8); }
+        canvas { display: block; width: 100%; height: 100%; }
+        #danger-overlay { position: absolute; bottom: 0; left: 0; width: 100%; height: 20%; background: linear-gradient(to top, rgba(255, 0, 50, 0.3), transparent); pointer-events: none; opacity: 0; transition: opacity 0.3s; z-index: 5; }
         .danger-pulse { animation: pulseRed 1s infinite alternate; }
         @keyframes pulseRed { from { opacity: 0.1; } to { opacity: 0.4; } }
-
-        /* --- 全螢幕閃光特效 (Nuke用) --- */
-        #flash-overlay {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: white;
-            opacity: 0;
-            pointer-events: none;
-            z-index: 40;
-            transition: opacity 0.1s;
-        }
-
-        /* --- UI 層級 --- */
-        .ui-layer {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            background: rgba(0, 0, 0, 0.85);
-            backdrop-filter: blur(12px);
-            z-index: 50;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            opacity: 1;
-            visibility: visible;
-            padding: 20px;
-        }
-
-        .ui-layer.hidden {
-            opacity: 0;
-            visibility: hidden;
-            pointer-events: none;
-        }
-
-        /* --- Modal 層級 --- */
-        .modal-layer {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.95);
-            z-index: 60;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding-top: 60px;
-            transition: transform 0.4s cubic-bezier(0.19, 1, 0.22, 1);
-            transform: translateY(100%);
-        }
+        #flash-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: white; opacity: 0; pointer-events: none; z-index: 40; transition: opacity 0.1s; }
+        .ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(12px); z-index: 50; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); opacity: 1; visibility: visible; padding: 20px; }
+        .ui-layer.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+        .modal-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.95); z-index: 60; display: flex; flex-direction: column; align-items: center; padding-top: 60px; transition: transform 0.4s cubic-bezier(0.19, 1, 0.22, 1); transform: translateY(100%); }
         .modal-layer.active { transform: translateY(0); }
-
-        /* --- HUD --- */
-        #hud {
-            position: absolute;
-            top: 10px; 
-            left: 50%;
-            transform: translateX(-50%);
-            padding: 8px 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            pointer-events: none;
-            z-index: 10;
-            background: rgba(0,0,0,0.5);
-            border-radius: 20px;
-            border: 1px solid rgba(0, 195, 255, 0.3);
-            backdrop-filter: blur(4px);
-        }
+        #hud { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); padding: 8px 20px; display: flex; flex-direction: column; align-items: center; pointer-events: none; z-index: 10; background: rgba(0,0,0,0.5); border-radius: 20px; border: 1px solid rgba(0, 195, 255, 0.3); backdrop-filter: blur(4px); }
         .hud-label { font-size: 10px; color: #00c3ff; letter-spacing: 2px; font-family: 'Orbitron'; opacity: 0.9; }
         .hud-value { font-family: 'Orbitron', sans-serif; font-size: 24px; color: white; font-weight: bold; text-shadow: 0 0 10px rgba(0, 195, 255, 0.5); line-height: 1; }
-
-        /* --- 排行榜樣式 --- */
-        .lb-container-mini {
-            width: 100%; max-width: 340px;
-            background: rgba(10, 20, 40, 0.6);
-            border: 1px solid rgba(0, 195, 255, 0.3);
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 30px;
-            box-shadow: 0 0 30px rgba(0, 195, 255, 0.05);
-            backdrop-filter: blur(5px);
-        }
-        
-        .lb-container-full {
-            width: 95%; max-width: 420px;
-            height: 65vh;
-            overflow-y: auto;
-            background: rgba(10, 15, 20, 0.8);
-            border: 1px solid #333;
-            border-radius: 4px;
-            padding: 10px;
-            margin-bottom: 20px;
-        }
-
+        .lb-container-mini { width: 100%; max-width: 340px; background: rgba(10, 20, 40, 0.6); border: 1px solid rgba(0, 195, 255, 0.3); border-radius: 12px; padding: 20px; margin-bottom: 30px; box-shadow: 0 0 30px rgba(0, 195, 255, 0.05); backdrop-filter: blur(5px); }
+        .lb-container-full { width: 95%; max-width: 420px; height: 65vh; overflow-y: auto; background: rgba(10, 15, 20, 0.8); border: 1px solid #333; border-radius: 4px; padding: 10px; margin-bottom: 20px; }
         .lb-title { color: #00c3ff; font-size: 14px; letter-spacing: 2px; margin-bottom: 15px; text-align: center; font-weight: bold; }
-
-        .lb-row {
-            display: flex; justify-content: space-between; align-items: center;
-            color: #aaa; font-size: 14px; padding: 10px 12px;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-            font-family: 'Orbitron', sans-serif;
-            transition: background 0.2s;
-        }
-        
-        .lb-row.highlight {
-            background: linear-gradient(90deg, rgba(0, 195, 255, 0.15), transparent);
-            border-left: 3px solid #00c3ff;
-            color: white;
-        }
-
+        .lb-row { display: flex; justify-content: space-between; align-items: center; color: #aaa; font-size: 14px; padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.05); font-family: 'Orbitron', sans-serif; transition: background 0.2s; }
+        .lb-row.highlight { background: linear-gradient(90deg, rgba(0, 195, 255, 0.15), transparent); border-left: 3px solid #00c3ff; color: white; }
         .rank-1 { color: #ffd700 !important; font-weight: 900; text-shadow: 0 0 15px rgba(255, 215, 0, 0.4); font-size: 1.1em; }
         .rank-2 { color: #e0e0e0 !important; font-weight: bold; }
         .rank-3 { color: #c58f60 !important; font-weight: bold; }
-
-        /* --- 按鈕 --- */
-        .btn-primary {
-            background: #000;
-            border: 1px solid #00c3ff;
-            padding: 16px 40px;
-            color: #00c3ff;
-            font-family: 'Orbitron', sans-serif;
-            font-weight: bold;
-            font-size: 18px;
-            letter-spacing: 2px;
-            border-radius: 50px;
-            cursor: pointer;
-            box-shadow: 0 0 15px rgba(0, 195, 255, 0.2);
-            transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
-            text-transform: uppercase;
-            width: 100%;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .btn-primary::after {
-            content: '';
-            position: absolute;
-            top: 0; left: -100%;
-            width: 100%; height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(0, 195, 255, 0.2), transparent);
-            transition: 0.5s;
-        }
-
-        .btn-primary:hover {
-            background: #00c3ff;
-            color: #000;
-            box-shadow: 0 0 30px rgba(0, 195, 255, 0.6);
-        }
-        
+        .btn-primary { background: #000; border: 1px solid #00c3ff; padding: 16px 40px; color: #00c3ff; font-family: 'Orbitron', sans-serif; font-weight: bold; font-size: 18px; letter-spacing: 2px; border-radius: 50px; cursor: pointer; box-shadow: 0 0 15px rgba(0, 195, 255, 0.2); transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1); text-transform: uppercase; width: 100%; position: relative; overflow: hidden; }
+        .btn-primary::after { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(0, 195, 255, 0.2), transparent); transition: 0.5s; }
+        .btn-primary:hover { background: #00c3ff; color: #000; box-shadow: 0 0 30px rgba(0, 195, 255, 0.6); }
         .btn-primary:hover::after { left: 100%; }
         .btn-primary:active { transform: scale(0.98); }
-        
-        .btn-attract {
-            animation: neonPulse 2s infinite ease-in-out;
-            border-width: 2px;
-            text-shadow: 0 0 10px rgba(0, 195, 255, 0.8);
-        }
-        @keyframes neonPulse {
-            0% { box-shadow: 0 0 5px rgba(0, 195, 255, 0.3); transform: scale(1); }
-            50% { box-shadow: 0 0 25px rgba(0, 195, 255, 0.8), 0 0 50px rgba(0, 195, 255, 0.4); transform: scale(1.05); border-color: #fff; color: #fff; }
-            100% { box-shadow: 0 0 5px rgba(0, 195, 255, 0.3); transform: scale(1); }
-        }
-        
-        .btn-secondary {
-            background: transparent; border: 1px solid #444; padding: 12px;
-            color: #888; font-size: 14px; border-radius: 50px;
-            cursor: pointer; margin-top: 12px; width: 100%; transition: all 0.2s;
-            letter-spacing: 1px;
-        }
+        .btn-attract { animation: neonPulse 2s infinite ease-in-out; border-width: 2px; text-shadow: 0 0 10px rgba(0, 195, 255, 0.8); }
+        @keyframes neonPulse { 0% { box-shadow: 0 0 5px rgba(0, 195, 255, 0.3); transform: scale(1); } 50% { box-shadow: 0 0 25px rgba(0, 195, 255, 0.8), 0 0 50px rgba(0, 195, 255, 0.4); transform: scale(1.05); border-color: #fff; color: #fff; } 100% { box-shadow: 0 0 5px rgba(0, 195, 255, 0.3); transform: scale(1); } }
+        .btn-secondary { background: transparent; border: 1px solid #444; padding: 12px; color: #888; font-size: 14px; border-radius: 50px; cursor: pointer; margin-top: 12px; width: 100%; transition: all 0.2s; letter-spacing: 1px; }
         .btn-secondary:hover { border-color: white; color: white; }
-        
-        .btn-text {
-            background: none; border: none; color: #666; font-size: 12px;
-            text-decoration: none; cursor: pointer; margin-top: 15px;
-            transition: color 0.2s; letter-spacing: 1px;
-        }
+        .btn-text { background: none; border: none; color: #666; font-size: 12px; text-decoration: none; cursor: pointer; margin-top: 15px; transition: color 0.2s; letter-spacing: 1px; }
         .btn-text:hover { color: #00c3ff; text-decoration: underline; }
-
-        input.glass-input {
-            background: rgba(0, 0, 0, 0.5); 
-            border: 1px solid #333;
-            padding: 14px; width: 100%; 
-            color: white; border-radius: 8px; margin-bottom: 12px; 
-            outline: none; font-family: 'Noto Sans TC';
-            transition: border-color 0.3s;
-        }
+        input.glass-input { background: rgba(0, 0, 0, 0.5); border: 1px solid #333; padding: 14px; width: 100%; color: white; border-radius: 8px; margin-bottom: 12px; outline: none; font-family: 'Noto Sans TC'; transition: border-color 0.3s; }
         input.glass-input:focus { border-color: #00c3ff; }
-
-        /* --- 旗艦兌換券 --- */
-        .flagship-ticket {
-            position: relative;
-            background: transparent;
-            border-radius: 16px;
-            width: 100%;
-            max-width: 360px;
-            margin-bottom: 10px;
-            overflow: hidden;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
-            background-image: url('https://raw.githubusercontent.com/andyhhsu/Galaxy-Christmas-Challenge/main/card.jpg');
-            background-size: cover;
-            background-position: center;
-            min-height: 180px;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-end;
-        }
-        
-        .ticket-overlay {
-            background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.6) 50%, transparent 100%);
-            padding: 15px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-            width: 100%;
-        }
-
+        .flagship-ticket { position: relative; background: transparent; border-radius: 16px; width: 100%; max-width: 360px; margin-bottom: 10px; overflow: hidden; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8); background-image: url('https://raw.githubusercontent.com/andyhhsu/Galaxy-Christmas-Challenge/main/card.jpg'); background-size: cover; background-position: center; min-height: 180px; display: flex; flex-direction: column; justify-content: flex-end; }
+        .ticket-overlay { background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.6) 50%, transparent 100%); padding: 15px 20px; display: flex; justify-content: space-between; align-items: flex-end; width: 100%; }
         .ticket-info-block { text-align: left; }
-        /* 縮小玩家名字字體 */
         .ticket-player-name { color: #fff; font-weight: bold; font-size: 16px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); font-family: 'Orbitron'; }
         .ticket-label-sm { color: #00c3ff; font-size: 10px; letter-spacing: 1px; font-weight: bold; text-transform: uppercase; }
-        
         .ticket-score-block { text-align: right; }
-        /* 字體縮小至 20px */
         .ticket-score-big { color: #ffd700; font-family: 'Orbitron'; font-size: 20px; font-weight: 900; line-height: 1; text-shadow: 0 2px 10px rgba(0,0,0,0.8); }
-
-        /* 兌換提醒文字 */
-        .redeem-text {
-            color: #ffd700;
-            font-size: 14px;
-            font-weight: bold;
-            text-align: center;
-            margin-bottom: 20px;
-            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
-            animation: pulseText 2s infinite;
-            font-family: 'Noto Sans TC';
-            letter-spacing: 1px;
-        }
+        .redeem-text { color: #ffd700; font-size: 14px; font-weight: bold; text-align: center; margin-bottom: 20px; text-shadow: 0 0 10px rgba(255, 215, 0, 0.5); animation: pulseText 2s infinite; font-family: 'Noto Sans TC'; letter-spacing: 1px; }
         @keyframes pulseText { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
-
-        /* --- 任務說明頁 --- */
-        .instruction-box {
-            background: rgba(10, 12, 16, 0.9);
-            border: 1px solid #333;
-            border-left: 3px solid #00c3ff;
-            border-radius: 8px;
-            padding: 16px;
-            width: 100%;
-            max-width: 420px;
-            margin-bottom: 20px;
-            text-align: left;
-        }
+        .instruction-box { background: rgba(10, 12, 16, 0.9); border: 1px solid #333; border-left: 3px solid #00c3ff; border-radius: 8px; padding: 16px; width: 100%; max-width: 420px; margin-bottom: 20px; text-align: left; }
         .inst-title { color: #fff; font-weight: bold; font-size: 14px; margin-bottom: 8px; letter-spacing: 2px; font-family: 'Orbitron'; }
         .inst-list { font-size: 14px; color: #ccc; list-style: none; padding: 0; line-height: 1.6; }
         .inst-list li::before { content: ">> "; color: #00c3ff; }
-        
         .inst-icons { display: flex; justify-content: space-between; margin-top: 15px; border-top: 1px solid #222; padding-top: 10px; }
         .inst-icon-item { text-align: center; width: 18%; }
         .inst-icon-emoji { font-size: 24px; margin-bottom: 4px; display: block; filter: drop-shadow(0 0 5px rgba(0,195,255,0.5)); }
         .inst-icon-text { font-size: 10px; color: #888; line-height: 1.2; }
-        
         .inst-icon-emoji.nuke { filter: drop-shadow(0 0 8px #ef4444); }
         .inst-icon-emoji.multi { filter: drop-shadow(0 0 8px #22c55e); }
-
-        .prize-box {
-            background: rgba(10, 12, 16, 0.9);
-            border: 1px solid #333;
-            border-left: 3px solid #ffd700;
-            border-radius: 8px;
-            padding: 20px;
-            width: 100%;
-            max-width: 420px;
-            margin-bottom: 10px;
-            text-align: left;
-        }
+        .prize-box { background: rgba(10, 12, 16, 0.9); border: 1px solid #333; border-left: 3px solid #ffd700; border-radius: 8px; padding: 20px; width: 100%; max-width: 420px; margin-bottom: 10px; text-align: left; }
         .prize-title { color: #ffd700; font-weight: bold; font-size: 14px; margin-bottom: 12px; letter-spacing: 2px; font-family: 'Orbitron'; }
         .prize-item { display: flex; align-items: center; gap: 15px; margin-bottom: 10px; }
         .prize-rank { font-family: 'Orbitron'; font-weight: bold; color: #666; width: 20px; }
         .prize-name { color: white; font-weight: bold; font-size: 13px; }
         .prize-desc { color: #888; font-size: 11px; }
-
-        /* 聖誕裝飾 */
         .xmas-deco { position: absolute; pointer-events: none; z-index: 45; }
         .xmas-sock { top: 10%; right: 10%; font-size: 40px; transform: rotate(15deg); filter: drop-shadow(0 0 10px red); animation: sway 3s infinite ease-in-out alternate; }
         .xmas-ball { top: 15%; left: 10%; font-size: 35px; filter: drop-shadow(0 0 10px gold); animation: bounce-slow 4s infinite ease-in-out; }
         .xmas-snow { bottom: 5%; right: 5%; font-size: 25px; opacity: 0.7; }
         @keyframes sway { from { transform: rotate(10deg); } to { transform: rotate(20deg); } }
         @keyframes bounce-slow { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-        
-        /* Total Play Count */
-        .total-play-count {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            font-family: 'Orbitron', sans-serif;
-            font-size: 10px;
-            color: #aaa;
-            background: rgba(0,0,0,0.6);
-            padding: 5px 10px;
-            border-radius: 15px;
-            border: 1px solid #333;
-            pointer-events: none;
-            z-index: 40;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        .total-play-count span {
-            color: #00c3ff;
-            font-weight: bold;
-            font-size: 14px;
-            margin-top: 2px;
-        }
-
-        /* Music Toggle Button */
-        .music-toggle {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            z-index: 100;
-            background: rgba(0,0,0,0.6);
-            border: 1px solid #333;
-            color: #00c3ff;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
+        .total-play-count { position: absolute; top: 20px; left: 20px; font-family: 'Orbitron', sans-serif; font-size: 10px; color: #aaa; background: rgba(0,0,0,0.6); padding: 5px 10px; border-radius: 15px; border: 1px solid #333; pointer-events: none; z-index: 40; display: flex; flex-direction: column; align-items: center; }
+        .total-play-count span { color: #00c3ff; font-weight: bold; font-size: 14px; margin-top: 2px; }
+        .music-toggle { position: absolute; top: 20px; right: 20px; z-index: 100; background: rgba(0,0,0,0.6); border: 1px solid #333; color: #00c3ff; width: 40px; height: 40px; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: all 0.3s; }
         .music-toggle:hover { background: rgba(0, 195, 255, 0.2); border-color: #00c3ff; }
         .music-toggle.muted { color: #555; border-color: #555; }
-
     </style>
 </head>
 <body onclick="game.unlockAudio()"> 
 
 <audio id="bgm" loop preload="auto">
     <source src="https://raw.githubusercontent.com/andyhhsu/Galaxy-Christmas-Challenge/main/8-bit-takeover-367276.mp3" type="audio/mpeg">
-    Your browser does not support the audio element.
 </audio>
 
 <div id="game-wrapper">
-    
     <div class="music-toggle" id="musicBtn" onclick="game.audio.toggleMute(); event.stopPropagation();">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
     </div>
-
     <div id="game-container">
         <canvas id="gameCanvas"></canvas>
         <div id="danger-overlay"></div>
         <div id="flash-overlay"></div>
-
-        <!-- HUD -->
         <div id="hud">
-            <div class="hud-item">
-                <div class="hud-label">SCORE</div>
-                <div class="hud-value" id="scoreVal">0</div>
-            </div>
+            <div class="hud-item"><div class="hud-label">SCORE</div><div class="hud-value" id="scoreVal">0</div></div>
         </div>
-
-        <!-- 狀態顯示 -->
         <div id="mode-indicator" style="position:absolute; bottom:140px; left:50%; transform:translateX(-50%); opacity:0; pointer-events:none; color:#00c3ff; font-weight:bold; background:rgba(0,0,0,0.8); padding:5px 15px; border-radius:4px; font-size:12px; transition:opacity 0.3s; border:1px solid #00c3ff; font-family: 'Orbitron'; letter-spacing: 2px;">MODE</div>
 
-        <!-- 1. Start Screen -->
         <div id="startScreen" class="ui-layer">
-            <div class="xmas-deco xmas-sock">🧦</div>
-            <div class="xmas-deco xmas-ball">🎄</div>
-            <div class="xmas-deco xmas-snow">❄️</div>
-
-            <div class="total-play-count">
-                累積挑戰
-                <span id="globalPlayCount">...</span>
-            </div>
-
+            <div class="xmas-deco xmas-sock">🧦</div><div class="xmas-deco xmas-ball">🎄</div><div class="xmas-deco xmas-snow">❄️</div>
+            <div class="total-play-count">累積挑戰<span id="globalPlayCount">...</span></div>
             <div class="text-center mb-8 mt-4">
                 <h1 class="text-4xl md:text-6xl font-black text-white tracking-tighter mb-1" style="font-family: 'Orbitron'; text-shadow: 0 0 20px rgba(0,195,255,0.5);">GALAXY</h1>
                 <h2 class="text-base md:text-xl text-red-600 tracking-[0.3em] font-bold font-orbitron mt-2 whitespace-nowrap" style="text-shadow: 0 0 10px rgba(220,38,38,0.8);">CHRISTMAS CHALLENGE</h2>
             </div>
-            
             <div class="lb-container-mini">
                 <div class="lb-title">RANKINGS</div>
-                <div id="top3-list" class="flex flex-col gap-2">
-                    <div class="text-center text-gray-500 text-xs font-mono">LOADING_DATA...</div>
-                </div>
+                <div id="top3-list" class="flex flex-col gap-2"><div class="text-center text-gray-500 text-xs font-mono">LOADING_DATA...</div></div>
                 <button class="btn-text w-full text-center" onclick="api.openFullLeaderboard(); event.stopPropagation();">查看完整排行榜 >></button>
             </div>
-
             <div class="w-full max-w-xs flex flex-col items-center">
                 <button class="btn-primary btn-attract" onclick="game.showInstructions()">START</button>
             </div>
         </div>
 
-        <!-- 1.5 Instruction Screen -->
         <div id="instructionScreen" class="ui-layer hidden">
-            <div class="w-full max-w-md flex justify-between items-end mb-4">
-                 <h2 class="text-4xl font-bold text-white" style="font-family: 'Noto Sans TC'">遊戲說明</h2>
-                 <div class="text-[#00c3ff] text-xs tracking-widest">SYSTEM READY</div>
-            </div>
-            
+            <div class="w-full max-w-md flex justify-between items-end mb-4"><h2 class="text-4xl font-bold text-white" style="font-family: 'Noto Sans TC'">遊戲說明</h2><div class="text-[#00c3ff] text-xs tracking-widest">SYSTEM READY</div></div>
             <div class="instruction-box">
                 <div class="inst-title">HOW TO PLAY</div>
-                <ul class="inst-list">
-                    <li>滑動擋板，接住能量球。</li>
-                    <li>擊碎上方落下的 <span class="text-red-400 font-bold">工作磚塊</span>。</li>
-                    <li>接住道具觸發 Galaxy 特效：</li>
-                </ul>
+                <ul class="inst-list"><li>滑動擋板，接住能量球。</li><li>擊碎上方落下的 <span class="text-red-400 font-bold">工作磚塊</span>。</li><li>接住道具觸發 Galaxy 特效：</li></ul>
                 <div class="inst-icons">
-                    <div class="inst-icon-item">
-                        <div class="inst-icon-emoji">📱</div>
-                        <div class="inst-icon-text">視野展開</div>
-                    </div>
-                    <div class="inst-icon-item">
-                        <div class="inst-icon-emoji">🖊️</div>
-                        <div class="inst-icon-text">S Pen</div>
-                    </div>
-                    <div class="inst-icon-item">
-                        <div class="inst-icon-emoji">❄️</div>
-                        <div class="inst-icon-text">AI 慢動</div>
-                    </div>
-                    <div class="inst-icon-item">
-                        <div class="inst-icon-emoji multi">🔴</div>
-                        <div class="inst-icon-text">極限多工</div>
-                    </div>
-                    <div class="inst-icon-item">
-                        <div class="inst-icon-emoji nuke">🎁</div>
-                        <div class="inst-icon-text">星際轟炸</div>
-                    </div>
+                    <div class="inst-icon-item"><div class="inst-icon-emoji">📱</div><div class="inst-icon-text">視野展開</div></div>
+                    <div class="inst-icon-item"><div class="inst-icon-emoji">🖊️</div><div class="inst-icon-text">S Pen</div></div>
+                    <div class="inst-icon-item"><div class="inst-icon-emoji">❄️</div><div class="inst-icon-text">AI 慢動</div></div>
+                    <div class="inst-icon-item"><div class="inst-icon-emoji multi">🔴</div><div class="inst-icon-text">極限多工</div></div>
+                    <div class="inst-icon-item"><div class="inst-icon-emoji nuke">🎁</div><div class="inst-icon-text">星際轟炸</div></div>
                 </div>
             </div>
-
             <div class="prize-box">
                 <div class="prize-title">REWARDS</div>
-                <div class="prize-item">
-                    <div class="prize-rank text-yellow-400">01</div>
-                    <div>
-                        <div class="prize-name">10,000mAh 行動電源</div>
-                    </div>
-                </div>
-                <div class="prize-item">
-                    <div class="prize-rank text-gray-300">02</div>
-                    <div>
-                        <div class="prize-name">Snapware 康寧輕瓷保溫吸管杯</div>
-                    </div>
-                </div>
-                <div class="prize-item">
-                    <div class="prize-rank text-orange-400">03</div>
-                    <div>
-                        <div class="prize-name">放鬆筋膜槍</div>
-                    </div>
-                </div>
+                <div class="prize-item"><div class="prize-rank text-yellow-400">01</div><div><div class="prize-name">10,000mAh 行動電源</div></div></div>
+                <div class="prize-item"><div class="prize-rank text-gray-300">02</div><div><div class="prize-name">Snapware 康寧輕瓷保溫吸管杯</div></div></div>
+                <div class="prize-item"><div class="prize-rank text-orange-400">03</div><div><div class="prize-name">放鬆筋膜槍</div></div></div>
             </div>
-            <div class="mb-4 text-[12px] text-[#00c3ff] text-center font-bold tracking-wide">
-                憑成績登錄截圖，可至三星旗艦館-微風南山兌換神秘好禮!
-            </div>
-
+            <div class="mb-4 text-[12px] text-[#00c3ff] text-center font-bold tracking-wide">憑成績登錄截圖，可至三星旗艦館-微風南山兌換神秘好禮!</div>
             <button class="btn-primary max-w-xs mt-2" onclick="game.startRealGame()">開始遊戲</button>
         </div>
 
-
-        <!-- 2. Game Over / Form Screen -->
         <div id="formScreen" class="ui-layer hidden">
             <h2 class="text-4xl font-bold text-white mb-2" style="font-family: 'Noto Sans TC'">遊戲結束</h2>
-            
-            <div class="text-center mb-6">
-                 <div class="text-gray-500 text-xs tracking-widest mb-1">最終分數</div>
-                 <div class="text-white font-bold text-4xl font-mono text-shadow-blue" id="finalScore">0</div>
-                 <div id="rankPrediction" class="text-[#00c3ff] text-sm font-bold mt-2 animate-pulse">計算排名中...</div>
-            </div>
-            
+            <div class="text-center mb-6"><div class="text-gray-500 text-xs tracking-widest mb-1">最終分數</div><div class="text-white font-bold text-4xl font-mono text-shadow-blue" id="finalScore">0</div><div id="rankPrediction" class="text-[#00c3ff] text-sm font-bold mt-2 animate-pulse">計算排名中...</div></div>
             <div class="bg-[#0a0a0a] p-6 rounded-xl w-full max-w-sm border border-gray-800 shadow-2xl">
                 <h3 class="text-white font-bold mb-6 text-center text-sm tracking-wide">登錄成績 & 參加抽獎</h3>
                 <input type="text" id="uName" class="glass-input" placeholder="姓名 / 暱稱">
                 <input type="tel" id="uPhone" class="glass-input" placeholder="手機號碼">
-                
-                <div class="flex items-center justify-center gap-3 mb-6 bg-[#111] p-3 rounded border border-[#222]">
-                    <span class="text-xl">⚡</span>
-                    <div>
-                        <div class="text-sm text-white font-bold">登錄即可抽 10,000mAh 行動電源</div>
-                        <div class="text-[10px] text-gray-500">(2026/1/2抽出)</div>
-                    </div>
-                </div>
-
+                <div class="flex items-center justify-center gap-3 mb-6 bg-[#111] p-3 rounded border border-[#222]"><span class="text-xl">⚡</span><div><div class="text-sm text-white font-bold">登錄即可抽 10,000mAh 行動電源</div><div class="text-[10px] text-gray-500">(2026/1/2抽出)</div></div></div>
                 <button class="btn-primary mb-3" id="submitBtn" onclick="api.submitScore()">確認送出</button>
                 <button class="btn-secondary mb-3" onclick="game.restartGame()">不參加，直接重玩</button>
                 <button class="btn-text text-gray-500 text-xs w-full" onclick="game.backToHome()">回到主畫面</button>
             </div>
         </div>
 
-        <!-- 3. Flagship Ticket Screen -->
         <div id="ticketScreen" class="ui-layer hidden">
-            
-            <div class="text-center mb-6">
-                <div class="text-[#00c3ff] text-4xl mb-2">✓</div>
-                <h2 class="text-xl font-bold text-white tracking-wide">上傳成功</h2>
-            </div>
-
+            <div class="text-center mb-6"><div class="text-[#00c3ff] text-4xl mb-2">✓</div><h2 class="text-xl font-bold text-white tracking-wide">上傳成功</h2></div>
             <div class="flagship-ticket">
                 <div class="ticket-overlay">
-                    <div class="ticket-info-block">
-                        <div class="ticket-label-sm">CHALLENGER</div>
-                        <div class="ticket-player-name" id="ticketName">PLAYER</div>
-                    </div>
-                    <div class="ticket-score-block">
-                        <div class="ticket-label-sm">SCORE</div>
-                        <div class="ticket-score-big" id="ticketScore">0</div>
-                    </div>
+                    <div class="ticket-info-block"><div class="ticket-label-sm">CHALLENGER</div><div class="ticket-player-name" id="ticketName">PLAYER</div></div>
+                    <div class="ticket-score-block"><div class="ticket-label-sm">SCORE</div><div class="ticket-score-big" id="ticketScore">0</div></div>
                 </div>
             </div>
-            <!-- 新增兌換提醒文字 (Updated Text) -->
             <div class="redeem-text">憑此頁面截圖兌換神秘小禮!</div>
-
             <div class="w-full max-w-xs flex flex-col gap-3">
                 <button class="btn-secondary border-[#00c3ff] text-[#00c3ff]" onclick="api.openFullLeaderboard()">查看排名</button>
                 <button class="btn-primary" onclick="game.restartGame()">再次挑戰</button>
@@ -580,30 +177,23 @@
             </div>
         </div>
 
-        <!-- 4. Leaderboard Modal -->
         <div id="leaderboardModal" class="modal-layer">
             <h2 class="text-2xl font-bold text-white mb-2" style="font-family: 'Noto Sans TC'">完整排行榜</h2>
             <p class="text-[#00c3ff] text-xs mb-4 tracking-widest">即時戰況</p>
-            
-            <div class="lb-container-full" id="full-lb-list">
-                <!-- JS Populated -->
-            </div>
-            
+            <div class="lb-container-full" id="full-lb-list"></div>
             <button class="btn-secondary max-w-xs mt-4" onclick="api.closeFullLeaderboard()">關閉</button>
         </div>
     </div>
 </div>
 
 <script>
-// --- Google Sheets API Manager ---
+// --- Modern Standard Version (Classes, Fetch, etc.) ---
+
 const GoogleSheetAPI = {
     scriptID: "AKfycbxdYUWV5J9symUn7xpbNdFbwm8zjJKz0YKA8nkYmewTpc_HT0kUcLLLrGmYCMNIWHpt",
-    
     get scriptURL() { return `https://script.google.com/macros/s/${this.scriptID}/exec`; },
-
     leaderboardData: [],
     globalPlayCount: 1280,
-
     mockData: [ { name: "AI_AGENT", score: 15000 }, { name: "Z_FOLD_PRO", score: 12500 }, { name: "VIP_MEMBER", score: 9800 }, { name: "GUEST_001", score: 5000 } ],
 
     init: function() {
@@ -615,15 +205,11 @@ const GoogleSheetAPI = {
         const stored = localStorage.getItem('playCount');
         if (stored) this.globalPlayCount = parseInt(stored);
         document.getElementById('globalPlayCount').innerText = this.globalPlayCount.toLocaleString();
-
-        fetch(this.scriptURL + "?action=get_play_count")
-            .then(res => res.json())
-            .then(data => {
-                this.globalPlayCount = data.count;
-                localStorage.setItem('playCount', this.globalPlayCount);
-                document.getElementById('globalPlayCount').innerText = this.globalPlayCount.toLocaleString();
-            })
-            .catch(console.error);
+        fetch(this.scriptURL + "?action=get_play_count").then(res => res.json()).then(data => {
+            this.globalPlayCount = data.count;
+            localStorage.setItem('playCount', this.globalPlayCount);
+            document.getElementById('globalPlayCount').innerText = this.globalPlayCount.toLocaleString();
+        }).catch(console.error);
     },
 
     incrementPlayCount: function() {
@@ -649,9 +235,7 @@ const GoogleSheetAPI = {
 
     predictRank: function(score) {
         let rank = 1;
-        for(let item of this.leaderboardData) {
-            if(item.score >= score) rank++;
-        }
+        for(let item of this.leaderboardData) { if(item.score >= score) rank++; }
         return rank;
     },
 
@@ -672,18 +256,15 @@ const GoogleSheetAPI = {
     renderFullList: function(highlightName = null, highlightScore = null) {
         const listEl = document.getElementById('full-lb-list');
         listEl.innerHTML = "";
-        let targetElement = null;
-
         this.leaderboardData.forEach((item, index) => {
             const rank = index + 1;
             const row = document.createElement('div');
             row.className = `lb-row`;
-            if (highlightName && item.name === highlightName && item.score == highlightScore) { row.classList.add('highlight'); targetElement = row; }
+            if (highlightName && item.name === highlightName && item.score == highlightScore) { row.classList.add('highlight'); }
             let rankColor = rank === 1 ? "rank-1" : (rank === 2 ? "rank-2" : (rank === 3 ? "rank-3" : ""));
             row.innerHTML = `<span class="w-10 font-bold ${rankColor}" style="font-family:'Orbitron'">#${rank}</span><span class="flex-1 text-left truncate px-2 text-gray-300">${item.name}</span><span class="w-20 text-right font-mono text-[#00c3ff]">${item.score}</span>`;
             listEl.appendChild(row);
         });
-        return targetElement;
     },
 
     openFullLeaderboard: function() { document.getElementById('leaderboardModal').classList.add('active'); this.renderFullList(); gtag('event', 'view_leaderboard'); },
@@ -693,11 +274,9 @@ const GoogleSheetAPI = {
         const name = document.getElementById('uName').value.trim();
         const phone = document.getElementById('uPhone').value.trim();
         const score = parseInt(document.getElementById('finalScore').innerText);
-
         if(!name || !phone) { alert('請輸入姓名與電話以便兌換獎品'); return; }
         const btn = document.getElementById('submitBtn'); btn.innerText = "UPLOADING..."; btn.disabled = true;
         document.getElementById('ticketName').innerText = name; document.getElementById('ticketScore').innerText = score;
-
         const formData = new FormData();
         formData.append('name', name); formData.append('phone', phone); formData.append('score', score); formData.append('action', 'add');
         gtag('event', 'generate_lead', { 'event_category': 'game', 'event_label': 'score_submit', 'value': score });
@@ -710,7 +289,6 @@ const GoogleSheetAPI = {
     }
 };
 
-// --- Game Engine ---
 class SoundManager {
     constructor() { 
         this.ctx = new (window.AudioContext || window.webkitAudioContext)(); 
@@ -718,91 +296,46 @@ class SoundManager {
         this.masterGain.gain.value = 0.3; 
         this.masterGain.connect(this.ctx.destination); 
         this.enabled = false; 
-        
-        // Audio State (Combined BGM & SFX)
         this.bgmEl = document.getElementById('bgm');
         this.bgmPlaying = false;
-        this.muted = false; // Default Unmuted
-        this.shouldPlay = false; // 嚴格控制播放旗標
+        this.muted = false; 
+        this.shouldPlay = false;
     }
-    
     enable() { 
-        if (this.ctx.state === 'suspended') {
-            this.ctx.resume().then(() => {
-                this.enabled = true;
-                console.log("Audio Context Resumed");
-            });
-        } else {
-            this.enabled = true;
-        }
+        if (this.ctx.state === 'suspended') { this.ctx.resume().then(() => { this.enabled = true; }); } else { this.enabled = true; }
     }
-
-    // Toggle both BGM and SFX
     toggleMute() {
         this.muted = !this.muted;
         const btn = document.getElementById('musicBtn');
-        
         if (this.muted) {
-            this.bgmEl.pause();
-            this.bgmPlaying = false;
-            btn.classList.add('muted');
+            this.bgmEl.pause(); this.bgmPlaying = false; btn.classList.add('muted');
             btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"></path><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>`;
         } else {
             btn.classList.remove('muted');
             btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>`;
-            
-            if (this.shouldPlay) {
-                this.bgmEl.volume = 0.4;
-                const playPromise = this.bgmEl.play();
-                if (playPromise !== undefined) {
-                    playPromise.then(() => {
-                        this.bgmPlaying = true;
-                    }).catch(error => {
-                       console.log("Playback prevented. Interaction needed.");
-                    });
-                }
-            }
+            if (this.shouldPlay) { this.bgmEl.volume = 0.4; this.bgmEl.play().catch(e => {}); }
         }
     }
-
     tryPlayBGM() {
         this.shouldPlay = true; 
-        if (!this.muted) {
-            this.bgmEl.volume = 0.4;
-            const playPromise = this.bgmEl.play();
-            if (playPromise !== undefined) {
-                playPromise.catch(error => {
-                   console.log("Autoplay prevented. Waiting for interaction.");
-                });
-            }
-        }
+        if (!this.muted) { this.bgmEl.volume = 0.4; this.bgmEl.currentTime = 0; this.bgmEl.play().catch(e => {}); }
     }
-
     stopBGM() {
         this.shouldPlay = false; 
-        this.bgmEl.pause();
+        this.bgmEl.pause(); 
         this.bgmEl.currentTime = 0; 
         this.bgmPlaying = false;
     }
-
     playTone(freq, type, duration, slideTo) { 
         if(!this.enabled || this.muted) return; 
-        
         try {
-            const osc = this.ctx.createOscillator(); 
-            const gain = this.ctx.createGain(); 
-            osc.type = type; 
-            osc.frequency.setValueAtTime(freq, this.ctx.currentTime); 
+            const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain(); 
+            osc.type = type; osc.frequency.setValueAtTime(freq, this.ctx.currentTime); 
             if(slideTo) osc.frequency.exponentialRampToValueAtTime(slideTo, this.ctx.currentTime + duration); 
-            gain.gain.setValueAtTime(0.5, this.ctx.currentTime); 
-            gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration); 
-            osc.connect(gain); 
-            gain.connect(this.masterGain); 
-            osc.start(); 
-            osc.stop(this.ctx.currentTime + duration); 
-        } catch(e) { }
+            gain.gain.setValueAtTime(0.5, this.ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration); 
+            osc.connect(gain); gain.connect(this.masterGain); osc.start(); osc.stop(this.ctx.currentTime + duration); 
+        } catch(e) {}
     }
-    
     playHit() { this.playTone(300, 'sine', 0.1); }
     playPaddle() { this.playTone(150, 'triangle', 0.1); }
     playShoot() { this.playTone(800, 'square', 0.1, 200); }
@@ -824,27 +357,20 @@ class Game {
         this.flashOverlay = document.getElementById('flash-overlay');
         this.particles = []; this.initParticles();
         this.baseBallSpeed = 5.0;
-        
         this.bgImage = new Image();
         this.bgImage.src = 'https://raw.githubusercontent.com/andyhhsu/Galaxy-Christmas-Challenge/main/background.png';
-
         this.reset(); this.bindEvents();
         window.addEventListener('resize', () => { this.resize(); this.initParticles(); if(!this.running) this.drawStaticBackground(); });
-        
         this.bgImage.onload = () => { if(!this.running) this.drawStaticBackground(); };
-        
         this.drawStaticBackground();
         GoogleSheetAPI.init();
         this.idleTime = null; this.resetIdleTimer = this.resetIdleTimer.bind(this);
         ['mousemove', 'mousedown', 'keypress', 'touchmove', 'touchstart', 'click'].forEach(evt => window.addEventListener(evt, this.resetIdleTimer));
         this.resetIdleTimer();
     }
+    unlockAudio() { this.audio.enable(); }
     
-    unlockAudio() {
-        this.audio.enable();
-    }
-
-    // CRITICAL FIX: Replace ctx.roundRect with manual path drawing for older browser compatibility
+    // Add safe path drawing to avoid crashes on old browsers even in modern file
     drawRoundedRect(x, y, w, h, r) {
         if (w < 2 * r) r = w / 2;
         if (h < 2 * r) r = h / 2;
@@ -863,150 +389,72 @@ class Game {
         grad.addColorStop(0, '#333'); grad.addColorStop(0.2, '#666'); grad.addColorStop(0.5, '#222'); grad.addColorStop(1, '#111');
         this.ctx.fillStyle = grad;
         this.ctx.shadowBlur = 15; this.ctx.shadowColor = color; 
-        
-        // Use compatible drawing method
         this.drawRoundedRect(x, y, w, h, 4);
         this.ctx.shadowBlur = 0;
-
-        const margin = 2;
-        const sw = w - (margin*2);
-        const sh = h - (margin*2);
+        const margin = 2; const sw = w - (margin*2); const sh = h - (margin*2);
         this.ctx.fillStyle = color; 
-        
-        if (state === 'cover') {
-            this.ctx.fillRect(x+margin, y+margin, sw, sh);
-            this.ctx.fillStyle = '#000'; this.ctx.beginPath(); this.ctx.arc(x + w/2, y + 4, 1.5, 0, Math.PI*2); this.ctx.fill();
-        } else if (state === 'main') {
-            const half = sw / 2;
-            this.ctx.fillRect(x+margin, y+margin, half-1, sh);
-            this.ctx.fillRect(x+margin+half+1, y+margin, half-1, sh);
-            this.ctx.fillStyle = '#444'; this.ctx.fillRect(x+w/2-1, y, 2, h);
-        } else if (state === 'trifold') {
-            const third = sw / 3;
-            this.ctx.fillRect(x+margin, y+margin, third-1, sh);
-            this.ctx.fillRect(x+margin+third+1, y+margin, third-1, sh);
-            this.ctx.fillRect(x+margin+(third*2)+2, y+margin, third-1, sh);
-            this.ctx.fillStyle = '#444';
-            this.ctx.fillRect(x+w/3-1, y, 2, h);
-            this.ctx.fillRect(x+(w*2)/3-1, y, 2, h);
-        }
+        if (state === 'cover') { this.ctx.fillRect(x+margin, y+margin, sw, sh); this.ctx.fillStyle = '#000'; this.ctx.beginPath(); this.ctx.arc(x + w/2, y + 4, 1.5, 0, Math.PI*2); this.ctx.fill(); }
+        else if (state === 'main') { const half = sw / 2; this.ctx.fillRect(x+margin, y+margin, half-1, sh); this.ctx.fillRect(x+margin+half+1, y+margin, half-1, sh); this.ctx.fillStyle = '#444'; this.ctx.fillRect(x+w/2-1, y, 2, h); }
+        else if (state === 'trifold') { const third = sw / 3; this.ctx.fillRect(x+margin, y+margin, third-1, sh); this.ctx.fillRect(x+margin+third+1, y+margin, third-1, sh); this.ctx.fillRect(x+margin+(third*2)+2, y+margin, third-1, sh); this.ctx.fillStyle = '#444'; this.ctx.fillRect(x+w/3-1, y, 2, h); this.ctx.fillRect(x+(w*2)/3-1, y, 2, h); }
     }
-
     resize() { 
         const wrapper = document.getElementById('game-wrapper'); 
-        let w = wrapper.clientWidth;
-        let h = wrapper.clientHeight;
-        
-        if (w < 10 || h < 10) {
-            w = window.innerWidth;
-            h = window.innerHeight;
-        }
-
-        this.width = w; 
-        this.height = h; 
-        this.canvas.width = this.width; 
-        this.canvas.height = this.height; 
-
-        if (this.paddle) {
-            this.paddle.y = this.height - 120;
-            if (this.paddle.x > this.width - this.paddle.w) {
-                this.paddle.x = this.width - this.paddle.w;
-            }
-        }
+        let w = wrapper.clientWidth; let h = wrapper.clientHeight;
+        if (w < 10 || h < 10) { w = window.innerWidth; h = window.innerHeight; }
+        this.width = w; this.height = h; this.canvas.width = this.width; this.canvas.height = this.height; 
+        if (this.paddle) { this.paddle.y = this.height - 120; if (this.paddle.x > this.width - this.paddle.w) { this.paddle.x = this.width - this.paddle.w; } }
     }
     resetIdleTimer() { clearTimeout(this.idleTime); this.idleTime = setTimeout(() => { if (document.getElementById('startScreen').classList.contains('hidden')) this.backToHome(); }, 15000); }
     initParticles() { this.bgParticles = []; for(let i=0; i<40; i++) this.bgParticles.push({ x: Math.random() * this.width, y: Math.random() * this.height, size: Math.random() * 2 + 1, speed: Math.random() * 0.5 + 0.2, alpha: Math.random() * 0.5 }); }
     bindEvents() {
         const moveHandler = (x) => { if(!this.running) return; const wrapper = document.getElementById('game-wrapper'); const rect = wrapper.getBoundingClientRect(); const relativeX = x - rect.left; this.paddle.x = relativeX - this.paddle.w / 2; if(this.paddle.x < 0) this.paddle.x = 0; if(this.paddle.x + this.paddle.w > this.width) this.paddle.x = this.width - this.paddle.w; };
         this.canvas.addEventListener('mousemove', e => moveHandler(e.clientX));
-        // Added touchstart for immediate response on tap
         this.canvas.addEventListener('touchstart', e => { e.preventDefault(); moveHandler(e.touches[0].clientX); }, { passive: false });
         this.canvas.addEventListener('touchmove', e => { e.preventDefault(); moveHandler(e.touches[0].clientX); }, { passive: false });
     }
-    
     reset() {
         this.running = false; this.score = 0; if(this.hudScore) this.hudScore.innerText = "0";
         this.difficultyLevel = 1; this.lastBrickSpawnTime = 0; this.lastShotTime = 0;
         const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
         this.brickSpeed = isTouch ? 1.2 : 1.0; this.baseBallSpeed = isTouch ? 2.5 : 5.0;
-        
         const paddleY = this.height - 120;
         this.paddle = { w: 100, h: 24, x: this.width/2 - 50, y: paddleY, color: '#00c3ff', state: 'cover' };
-        
         this.balls = []; this.balls.push({ x: this.width/2, y: paddleY - 20, r: 8, dx: 0, dy: 0, speed: this.baseBallSpeed, active: false, prevY: paddleY - 20 });
         this.bricks = []; this.particles = []; this.powerUps = []; this.bullets = [];
         this.aiMode = false; this.spenMode = false; this.dangerOverlay.classList.remove('danger-pulse');
     }
-    showInstructions() { 
-        document.getElementById('startScreen').classList.add('hidden'); 
-        document.getElementById('instructionScreen').classList.remove('hidden'); 
-        GoogleSheetAPI.incrementPlayCount(); 
-        
-        this.audio.enable();
-    } 
+    showInstructions() { document.getElementById('startScreen').classList.add('hidden'); document.getElementById('instructionScreen').classList.remove('hidden'); GoogleSheetAPI.incrementPlayCount(); this.audio.enable(); } 
     startRealGame() { this.restartGame(); }
     start() { this.showInstructions(); }
-    
     restartGame() {
-        this.resize();
-        
-        this.audio.enable(); 
-        this.audio.playPowerUp();
-        this.audio.tryPlayBGM(); 
-
-        document.getElementById('instructionScreen').classList.add('hidden');
-        document.getElementById('formScreen').classList.add('hidden'); 
-        document.getElementById('ticketScreen').classList.add('hidden');
-        document.getElementById('leaderboardModal').classList.remove('active');
-        gtag('event', 'game_restart');
-        GoogleSheetAPI.incrementPlayCount();
+        this.resize(); this.audio.enable(); this.audio.playPowerUp(); this.audio.tryPlayBGM(); 
+        document.getElementById('instructionScreen').classList.add('hidden'); document.getElementById('formScreen').classList.add('hidden'); document.getElementById('ticketScreen').classList.add('hidden'); document.getElementById('leaderboardModal').classList.remove('active');
+        gtag('event', 'game_restart'); GoogleSheetAPI.incrementPlayCount();
         this.reset(); this.running = true; if(this.balls.length > 0) { this.balls[0].active = true; this.balls[0].dy = -this.balls[0].speed; this.balls[0].dx = (Math.random() - 0.5) * 6; } 
-        
-        this.spawnBrickRowSafe();
-        
-        this.loop();
+        this.spawnBrickRowSafe(); this.loop();
     }
-
     backToHome() {
-        this.running = false;
-        this.audio.stopBGM();
-
-        document.getElementById('instructionScreen').classList.add('hidden');
-        document.getElementById('startScreen').classList.remove('hidden');
-        document.getElementById('formScreen').classList.add('hidden');
-        document.getElementById('ticketScreen').classList.add('hidden');
-        document.getElementById('leaderboardModal').classList.remove('active');
+        this.running = false; this.audio.stopBGM();
+        document.getElementById('instructionScreen').classList.add('hidden'); document.getElementById('startScreen').classList.remove('hidden'); document.getElementById('formScreen').classList.add('hidden'); document.getElementById('ticketScreen').classList.add('hidden'); document.getElementById('leaderboardModal').classList.remove('active');
         GoogleSheetAPI.fetchLeaderboard(); this.reset(); this.drawStaticBackground();
     }
-
     spawnBrickRowSafe() {
-        if (this.width <= 0 || isNaN(this.width)) {
-            console.warn("Width invalid, retrying spawn...");
-            setTimeout(() => {
-                this.resize();
-                this.spawnBrickRowSafe();
-            }, 100);
-            return;
-        }
+        if (this.width <= 0 || isNaN(this.width)) { console.warn("Width invalid, retrying spawn..."); setTimeout(() => { this.resize(); this.spawnBrickRowSafe(); }, 100); return; }
         this.spawnBrickRow(4);
     }
-
     spawnBrickRow(count = 1, startY = null) {
-        const cols = Math.floor(this.width / 60); 
-        if(cols <= 0) return; 
-        
+        const cols = Math.floor(this.width / 60); if(cols <= 0) return; 
         const offset = (this.width - (cols * 55)) / 2;
-        for(let r=0; r<count; r++) {
-            for(let c=0; c<cols; c++) {
-                if(Math.random() > 0.85) continue; 
-                const types = ['#00c3ff', '#0062cc', '#7c3aed', '#ffffff']; const color = types[Math.floor(Math.random() * types.length)];
-                const yPos = startY !== null ? startY + r * 30 : -40 + r * 30;
-                this.bricks.push({ x: offset + c * 55, y: yPos, w: 50, h: 20, status: 1, color: color });
-            }
-        }
+        for(let r=0; r<count; r++) { for(let c=0; c<cols; c++) {
+            if(Math.random() > 0.85) continue; 
+            const types = ['#00c3ff', '#0062cc', '#7c3aed', '#ffffff']; const color = types[Math.floor(Math.random() * types.length)];
+            const yPos = startY !== null ? startY + r * 30 : -40 + r * 30;
+            this.bricks.push({ x: offset + c * 55, y: yPos, w: 50, h: 20, status: 1, color: color });
+        }}
     }
     gameOver(reason) {
-        if(!this.running) return; this.running = false; this.audio.playGameOver(); document.getElementById('finalScore').innerText = this.score; gtag('event', 'level_end', { 'score': this.score, 'reason': reason });
+        if(!this.running) return; this.running = false; this.audio.playGameOver(); this.audio.stopBGM();
+        document.getElementById('finalScore').innerText = this.score; gtag('event', 'level_end', { 'score': this.score, 'reason': reason });
         const predRank = GoogleSheetAPI.predictRank(this.score);
         document.getElementById('rankPrediction').innerText = `預測排名: 第 ${predRank} 名`;
         document.getElementById('formScreen').classList.remove('hidden');
@@ -1049,54 +497,26 @@ class Game {
         if (type === 'nuke') { this.audio.playNuke(); this.flashOverlay.style.opacity = '1'; setTimeout(() => this.flashOverlay.style.opacity = '0', 500); this.bricks.forEach(b => { if(b.status === 1) { b.status = 0; this.score += 50; this.createParticles(b.x + b.w/2, b.y + b.h/2, '#fff'); } }); this.hudScore.innerText = this.score; }
         else if (type === 'multiball') { for(let i=0; i<2; i++) { this.balls.push({ x: this.paddle.x + this.paddle.w/2, y: this.paddle.y - 20, r: 8, dx: (Math.random() - 0.5) * 8, dy: -Math.abs(this.balls[0] ? this.balls[0].speed : this.baseBallSpeed), speed: this.balls[0] ? this.balls[0].speed : this.baseBallSpeed, active: true }); } }
         else if(type === 'expand') {
-            const oldW = this.paddle.w; let newW = this.paddle.state === 'cover' ? 130 : 170; 
-            this.paddle.state = this.paddle.state === 'cover' ? 'main' : 'trifold'; this.paddle.color = this.paddle.state === 'main' ? '#00c3ff' : '#7c3aed';
-            this.paddle.x -= (newW - oldW) / 2; this.paddle.w = newW;
-            if(this.paddle.x < 0) this.paddle.x = 0; if(this.paddle.x + this.paddle.w > this.width) this.paddle.x = this.width - this.paddle.w;
+            const oldW = this.paddle.w; let newW = this.paddle.state === 'cover' ? 130 : 170; this.paddle.state = this.paddle.state === 'cover' ? 'main' : 'trifold'; this.paddle.color = this.paddle.state === 'main' ? '#00c3ff' : '#7c3aed';
+            this.paddle.x -= (newW - oldW) / 2; this.paddle.w = newW; if(this.paddle.x < 0) this.paddle.x = 0; if(this.paddle.x + this.paddle.w > this.width) this.paddle.x = this.width - this.paddle.w;
             setTimeout(() => { const currentW = this.paddle.w; this.paddle.x += (currentW - 100) / 2; this.paddle.w = 100; this.paddle.state = 'cover'; this.paddle.color = '#00c3ff'; }, 10000);
-        } else if(type === 'spen') { this.spenMode = true; this.modeIndicator.innerText = "S PEN: RAPID FIRE"; this.modeIndicator.className = 'active-spen'; this.modeIndicator.style.opacity = '1'; setTimeout(() => { this.spenMode = false; this.modeIndicator.style.opacity = '0'; }, 5000); } // V10.0 1s text removed, using CSS fade instead
+        } else if(type === 'spen') { this.spenMode = true; this.modeIndicator.innerText = "S PEN: RAPID FIRE"; this.modeIndicator.className = 'active-spen'; this.modeIndicator.style.opacity = '1'; setTimeout(() => { this.spenMode = false; this.modeIndicator.style.opacity = '0'; }, 5000); }
         else if(type === 'ai') { this.aiMode = true; this.modeIndicator.innerText = "AI ASSIST: SLOW MOTION"; this.modeIndicator.className = 'active-ai'; this.modeIndicator.style.opacity = '1'; setTimeout(() => { this.aiMode = false; this.modeIndicator.style.opacity = '0'; }, 8000); }
-        
         setTimeout(() => this.modeIndicator.style.opacity = '0', 1500); 
     }
     shootBullet() { this.audio.playShoot(); this.bullets.push({ x: this.paddle.x + 10, y: this.paddle.y, w: 4, h: 15 }); this.bullets.push({ x: this.paddle.x + this.paddle.w - 14, y: this.paddle.y, w: 4, h: 15 }); }
     createParticles(x, y, color) { for(let i=0; i<8; i++) this.particles.push({ x: x, y: y, dx: (Math.random()-0.5)*5, dy: (Math.random()-0.5)*5, life: 1, color: color }); }
     createFloatText(text, x, y) { const div = document.createElement('div'); div.innerText = text; div.style.position = 'absolute'; div.style.left = x + 'px'; div.style.top = y + 'px'; div.style.color = '#fff'; div.style.fontWeight = 'bold'; div.style.fontSize = '20px'; div.style.textShadow = '0 0 10px #00c3ff'; div.style.pointerEvents = 'none'; div.style.transition = 'all 1s'; document.body.appendChild(div); requestAnimationFrame(() => { div.style.top = (y - 100) + 'px'; div.style.opacity = 0; }); setTimeout(() => div.remove(), 1000); }
-    
     drawStaticBackground() { 
-        if(this.bgImage.complete && this.bgImage.naturalWidth > 0) {
-             this.ctx.drawImage(this.bgImage, 0, 0, this.width, this.height);
-        } else {
-             this.ctx.fillStyle = '#000'; 
-             this.ctx.fillRect(0, 0, this.width, this.height);
-        }
-        
-        this.ctx.fillStyle = 'rgba(0, 195, 255, 0.5)'; 
-        if(this.bgParticles) { 
-            this.bgParticles.forEach(p => { 
-                this.ctx.globalAlpha = p.alpha; 
-                this.ctx.fillRect(p.x, p.y, p.size, p.size); 
-                this.ctx.globalAlpha = 1; 
-            }); 
-        } 
+        if(this.bgImage.complete && this.bgImage.naturalWidth > 0) { this.ctx.drawImage(this.bgImage, 0, 0, this.width, this.height); } else { this.ctx.fillStyle = '#000'; this.ctx.fillRect(0, 0, this.width, this.height); }
+        this.ctx.fillStyle = 'rgba(0, 195, 255, 0.5)'; if(this.bgParticles) { this.bgParticles.forEach(p => { this.ctx.globalAlpha = p.alpha; this.ctx.fillRect(p.x, p.y, p.size, p.size); this.ctx.globalAlpha = 1; }); } 
     }
-
     draw() {
-        // Draw Background Image if loaded, otherwise black
-        if(this.bgImage.complete && this.bgImage.naturalWidth > 0) {
-            this.ctx.drawImage(this.bgImage, 0, 0, this.width, this.height);
-        } else {
-            this.ctx.fillStyle = '#000'; 
-            this.ctx.fillRect(0, 0, this.width, this.height);
-        }
-
+        if(this.bgImage.complete && this.bgImage.naturalWidth > 0) { this.ctx.drawImage(this.bgImage, 0, 0, this.width, this.height); } else { this.ctx.fillStyle = '#000'; this.ctx.fillRect(0, 0, this.width, this.height); }
         this.ctx.fillStyle = 'rgba(0, 195, 255, 0.5)'; this.bgParticles.forEach(p => { this.ctx.globalAlpha = p.alpha; this.ctx.fillRect(p.x, p.y, p.size, p.size); this.ctx.globalAlpha = 1; });
         this.ctx.fillStyle = 'rgba(0, 0, 0, 0.3)'; this.ctx.fillRect(0, 0, this.width, this.height);
         this.ctx.strokeStyle = 'rgba(0, 195, 255, 0.3)'; this.ctx.beginPath(); this.ctx.setLineDash([5, 15]); this.ctx.moveTo(0, this.paddle.y - 10); this.ctx.lineTo(this.width, this.paddle.y - 10); this.ctx.stroke(); this.ctx.setLineDash([]);
-        
-        // Use Canvas Drawing for Paddle
         this.drawPaddle(this.paddle.x, this.paddle.y, this.paddle.w, this.paddle.h, this.paddle.state, this.paddle.color);
-
         this.balls.forEach(ball => { if(ball.active) { this.ctx.beginPath(); this.ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI*2); this.ctx.fillStyle = '#fff'; this.ctx.fill(); this.ctx.shadowBlur = 10; this.ctx.shadowColor = '#fff'; this.ctx.fill(); this.ctx.shadowBlur = 0; } });
         this.bricks.forEach(b => { this.ctx.fillStyle = b.color; this.ctx.fillRect(b.x, b.y, b.w, b.h); this.ctx.fillStyle = 'rgba(255,255,255,0.2)'; this.ctx.fillRect(b.x, b.y, b.w, b.h/2); });
         this.powerUps.forEach(p => {
