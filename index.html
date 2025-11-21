@@ -255,7 +255,7 @@
             border-radius: 16px;
             width: 100%;
             max-width: 360px;
-            margin-bottom: 10px; /* 減少下方間距，讓兌換文字更靠近 */
+            margin-bottom: 10px;
             overflow: hidden;
             box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
             background-image: url('https://raw.githubusercontent.com/andyhhsu/Galaxy-Christmas-Challenge/main/card.jpg');
@@ -277,12 +277,13 @@
         }
 
         .ticket-info-block { text-align: left; }
-        .ticket-player-name { color: #fff; font-weight: bold; font-size: 18px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); font-family: 'Orbitron'; }
+        /* 縮小玩家名字字體 */
+        .ticket-player-name { color: #fff; font-weight: bold; font-size: 16px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); font-family: 'Orbitron'; }
         .ticket-label-sm { color: #00c3ff; font-size: 10px; letter-spacing: 1px; font-weight: bold; text-transform: uppercase; }
         
         .ticket-score-block { text-align: right; }
-        /* 字體縮小至 24px 以避免遮擋圖片文字 */
-        .ticket-score-big { color: #ffd700; font-family: 'Orbitron'; font-size: 24px; font-weight: 900; line-height: 1; text-shadow: 0 2px 10px rgba(0,0,0,0.8); }
+        /* 字體縮小至 20px，避免遮擋圖片文字 */
+        .ticket-score-big { color: #ffd700; font-family: 'Orbitron'; font-size: 20px; font-weight: 900; line-height: 1; text-shadow: 0 2px 10px rgba(0,0,0,0.8); }
 
         /* 兌換提醒文字 */
         .redeem-text {
@@ -576,8 +577,8 @@
                     </div>
                 </div>
             </div>
-            <!-- 新增兌換提醒文字 -->
-            <div class="redeem-text">憑卷兌換神秘小禮!</div>
+            <!-- 新增兌換提醒文字 (Updated Text) -->
+            <div class="redeem-text">憑此頁面截圖兌換神秘小禮!</div>
 
             <div class="w-full max-w-xs flex flex-col gap-3">
                 <button class="btn-secondary border-[#00c3ff] text-[#00c3ff]" onclick="api.openFullLeaderboard()">查看排名</button>
@@ -883,6 +884,7 @@ class Game {
         let w = wrapper.clientWidth;
         let h = wrapper.clientHeight;
         
+        // 如果檢測到的寬高極小(例如瀏覽器尚未排版完成)，強制使用 window inner 大小
         if (w < 10 || h < 10) {
             w = window.innerWidth;
             h = window.innerHeight;
@@ -892,6 +894,16 @@ class Game {
         this.height = h; 
         this.canvas.width = this.width; 
         this.canvas.height = this.height; 
+
+        // 關鍵修復: 當螢幕尺寸改變(或初始化延遲)時，必須強制將擋板校正回底部
+        // 否則在大型看板上，擋板可能會被畫在錯誤的 Y 座標 (例如 -120) 導致看不見
+        if (this.paddle) {
+            this.paddle.y = this.height - 120;
+            // 確保擋板不會超出右邊界
+            if (this.paddle.x > this.width - this.paddle.w) {
+                this.paddle.x = this.width - this.paddle.w;
+            }
+        }
     }
     resetIdleTimer() { clearTimeout(this.idleTime); this.idleTime = setTimeout(() => { if (document.getElementById('startScreen').classList.contains('hidden')) this.backToHome(); }, 15000); }
     initParticles() { this.bgParticles = []; for(let i=0; i<40; i++) this.bgParticles.push({ x: Math.random() * this.width, y: Math.random() * this.height, size: Math.random() * 2 + 1, speed: Math.random() * 0.5 + 0.2, alpha: Math.random() * 0.5 }); }
@@ -940,7 +952,7 @@ class Game {
         GoogleSheetAPI.incrementPlayCount();
         this.reset(); this.running = true; if(this.balls.length > 0) { this.balls[0].active = true; this.balls[0].dy = -this.balls[0].speed; this.balls[0].dx = (Math.random() - 0.5) * 6; } 
         
-        // CRITICAL FIX: 增加生成磚塊的安全鎖
+        // CRITICAL FIX: 增加生成磚塊的安全鎖，防止寬度為0時生成失敗
         this.spawnBrickRowSafe();
         
         this.loop();
@@ -956,13 +968,13 @@ class Game {
         GoogleSheetAPI.fetchLeaderboard(); this.reset(); this.drawStaticBackground();
     }
 
-    // 新增安全生成函數
+    // 新增安全生成函數：如果寬度異常，會等待直到抓到正確寬度才生成
     spawnBrickRowSafe() {
-        // 如果寬度異常，延遲 100ms 再試一次，直到成功
+        // 如果寬度異常 (<=0 或 NaN)，延遲 100ms 再試一次，直到成功
         if (this.width <= 0 || isNaN(this.width)) {
             console.warn("Width invalid, retrying spawn...");
             setTimeout(() => {
-                this.resize();
+                this.resize(); // 再次嘗試校正尺寸
                 this.spawnBrickRowSafe();
             }, 100);
             return;
