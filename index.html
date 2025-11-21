@@ -248,7 +248,7 @@
         }
         input.glass-input:focus { border-color: #00c3ff; }
 
-        /* --- 旗艦兌換券 (UI Updated) --- */
+        /* --- 旗艦兌換券 --- */
         .flagship-ticket {
             position: relative;
             background: transparent;
@@ -282,7 +282,7 @@
         .ticket-label-sm { color: #00c3ff; font-size: 10px; letter-spacing: 1px; font-weight: bold; text-transform: uppercase; }
         
         .ticket-score-block { text-align: right; }
-        /* 字體縮小至 20px，避免遮擋圖片文字 */
+        /* 字體縮小至 20px */
         .ticket-score-big { color: #ffd700; font-family: 'Orbitron'; font-size: 20px; font-weight: 900; line-height: 1; text-shadow: 0 2px 10px rgba(0,0,0,0.8); }
 
         /* 兌換提醒文字 */
@@ -397,18 +397,14 @@
     </style>
 </head>
 <body onclick="game.unlockAudio()"> 
-<!-- 增加 body onclick 以確保在任何點擊發生時解鎖音效 Context -->
 
-<!-- 聖誕背景音樂 (增加 mp3 source 以相容更多裝置) -->
 <audio id="bgm" loop preload="auto">
-    <source src="https://upload.wikimedia.org/wikipedia/commons/e/e0/Jingle_Bells_by_Kevin_MacLeod.ogg" type="audio/ogg">
-    <source src="https://cdnjs.cloudflare.com/ajax/libs/ion-sound/3.0.7/sounds/bell_ring.mp3" type="audio/mpeg"> <!-- Fallback dummy or actual link if available -->
+    <source src="https://raw.githubusercontent.com/andyhhsu/Galaxy-Christmas-Challenge/main/8-bit-takeover-367276.mp3" type="audio/mpeg">
     Your browser does not support the audio element.
 </audio>
 
 <div id="game-wrapper">
     
-    <!-- Music Toggle Button -->
     <div class="music-toggle" id="musicBtn" onclick="game.audio.toggleMute(); event.stopPropagation();">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
     </div>
@@ -431,7 +427,6 @@
 
         <!-- 1. Start Screen -->
         <div id="startScreen" class="ui-layer">
-            
             <div class="xmas-deco xmas-sock">🧦</div>
             <div class="xmas-deco xmas-ball">🎄</div>
             <div class="xmas-deco xmas-snow">❄️</div>
@@ -446,7 +441,6 @@
                 <h2 class="text-base md:text-xl text-red-600 tracking-[0.3em] font-bold font-orbitron mt-2 whitespace-nowrap" style="text-shadow: 0 0 10px rgba(220,38,38,0.8);">CHRISTMAS CHALLENGE</h2>
             </div>
             
-            <!-- Top 3 Leaderboard -->
             <div class="lb-container-mini">
                 <div class="lb-title">RANKINGS</div>
                 <div id="top3-list" class="flex flex-col gap-2">
@@ -565,7 +559,6 @@
             </div>
 
             <div class="flagship-ticket">
-                <!-- Overlay content on top of the card image -->
                 <div class="ticket-overlay">
                     <div class="ticket-info-block">
                         <div class="ticket-label-sm">CHALLENGER</div>
@@ -730,10 +723,10 @@ class SoundManager {
         this.bgmEl = document.getElementById('bgm');
         this.bgmPlaying = false;
         this.muted = false; // Default Unmuted
+        this.shouldPlay = false; // 嚴格控制播放旗標
     }
     
     enable() { 
-        // 關鍵修正：確保在任何使用者點擊後恢復 Audio Context
         if (this.ctx.state === 'suspended') {
             this.ctx.resume().then(() => {
                 this.enabled = true;
@@ -750,30 +743,30 @@ class SoundManager {
         const btn = document.getElementById('musicBtn');
         
         if (this.muted) {
-            // MUTE
             this.bgmEl.pause();
             this.bgmPlaying = false;
             btn.classList.add('muted');
-            // Show Mute Icon
             btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"></path><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>`;
         } else {
-            // UNMUTE
-            this.bgmEl.volume = 0.4;
-            // 加入 Promise 處理，避免錯誤
-            const playPromise = this.bgmEl.play();
-            if (playPromise !== undefined) {
-                playPromise.catch(error => {
-                   console.log("Playback prevented. Interaction needed.");
-                });
-            }
-            this.bgmPlaying = true;
             btn.classList.remove('muted');
-            // Show Sound Icon
             btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>`;
+            
+            if (this.shouldPlay) {
+                this.bgmEl.volume = 0.4;
+                const playPromise = this.bgmEl.play();
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        this.bgmPlaying = true;
+                    }).catch(error => {
+                       console.log("Playback prevented. Interaction needed.");
+                    });
+                }
+            }
         }
     }
 
     tryPlayBGM() {
+        this.shouldPlay = true; 
         if (!this.muted) {
             this.bgmEl.volume = 0.4;
             const playPromise = this.bgmEl.play();
@@ -783,6 +776,13 @@ class SoundManager {
                 });
             }
         }
+    }
+
+    stopBGM() {
+        this.shouldPlay = false; 
+        this.bgmEl.pause();
+        this.bgmEl.currentTime = 0; 
+        this.bgmPlaying = false;
     }
 
     playTone(freq, type, duration, slideTo) { 
@@ -800,9 +800,7 @@ class SoundManager {
             gain.connect(this.masterGain); 
             osc.start(); 
             osc.stop(this.ctx.currentTime + duration); 
-        } catch(e) {
-            // Ignore minor audio errors
-        }
+        } catch(e) { }
     }
     
     playHit() { this.playTone(300, 'sine', 0.1); }
@@ -838,7 +836,7 @@ class Game {
         this.drawStaticBackground();
         GoogleSheetAPI.init();
         this.idleTime = null; this.resetIdleTimer = this.resetIdleTimer.bind(this);
-        ['mousemove', 'mousedown', 'keypress', 'touchmove', 'click'].forEach(evt => window.addEventListener(evt, this.resetIdleTimer));
+        ['mousemove', 'mousedown', 'keypress', 'touchmove', 'touchstart', 'click'].forEach(evt => window.addEventListener(evt, this.resetIdleTimer));
         this.resetIdleTimer();
     }
     
@@ -846,12 +844,29 @@ class Game {
         this.audio.enable();
     }
 
+    // CRITICAL FIX: Replace ctx.roundRect with manual path drawing for older browser compatibility
+    drawRoundedRect(x, y, w, h, r) {
+        if (w < 2 * r) r = w / 2;
+        if (h < 2 * r) r = h / 2;
+        this.ctx.beginPath();
+        this.ctx.moveTo(x + r, y);
+        this.ctx.arcTo(x + w, y, x + w, y + h, r);
+        this.ctx.arcTo(x + w, y + h, x, y + h, r);
+        this.ctx.arcTo(x, y + h, x, y, r);
+        this.ctx.arcTo(x, y, x + w, y, r);
+        this.ctx.closePath();
+        this.ctx.fill();
+    }
+
     drawPaddle(x, y, w, h, state, color) {
         const grad = this.ctx.createLinearGradient(x, y, x, y + h);
         grad.addColorStop(0, '#333'); grad.addColorStop(0.2, '#666'); grad.addColorStop(0.5, '#222'); grad.addColorStop(1, '#111');
         this.ctx.fillStyle = grad;
         this.ctx.shadowBlur = 15; this.ctx.shadowColor = color; 
-        this.ctx.beginPath(); this.ctx.roundRect(x, y, w, h, 4); this.ctx.fill(); this.ctx.shadowBlur = 0;
+        
+        // Use compatible drawing method
+        this.drawRoundedRect(x, y, w, h, 4);
+        this.ctx.shadowBlur = 0;
 
         const margin = 2;
         const sw = w - (margin*2);
@@ -879,12 +894,9 @@ class Game {
 
     resize() { 
         const wrapper = document.getElementById('game-wrapper'); 
-        // CRITICAL FIX: 某些大型看板或 WebView 的 clientWidth 在初始可能為 0
-        // 加入強制回退機制：如果容器寬度異常小，直接抓取 window 寬度
         let w = wrapper.clientWidth;
         let h = wrapper.clientHeight;
         
-        // 如果檢測到的寬高極小(例如瀏覽器尚未排版完成)，強制使用 window inner 大小
         if (w < 10 || h < 10) {
             w = window.innerWidth;
             h = window.innerHeight;
@@ -895,11 +907,8 @@ class Game {
         this.canvas.width = this.width; 
         this.canvas.height = this.height; 
 
-        // 關鍵修復: 當螢幕尺寸改變(或初始化延遲)時，必須強制將擋板校正回底部
-        // 否則在大型看板上，擋板可能會被畫在錯誤的 Y 座標 (例如 -120) 導致看不見
         if (this.paddle) {
             this.paddle.y = this.height - 120;
-            // 確保擋板不會超出右邊界
             if (this.paddle.x > this.width - this.paddle.w) {
                 this.paddle.x = this.width - this.paddle.w;
             }
@@ -909,7 +918,10 @@ class Game {
     initParticles() { this.bgParticles = []; for(let i=0; i<40; i++) this.bgParticles.push({ x: Math.random() * this.width, y: Math.random() * this.height, size: Math.random() * 2 + 1, speed: Math.random() * 0.5 + 0.2, alpha: Math.random() * 0.5 }); }
     bindEvents() {
         const moveHandler = (x) => { if(!this.running) return; const wrapper = document.getElementById('game-wrapper'); const rect = wrapper.getBoundingClientRect(); const relativeX = x - rect.left; this.paddle.x = relativeX - this.paddle.w / 2; if(this.paddle.x < 0) this.paddle.x = 0; if(this.paddle.x + this.paddle.w > this.width) this.paddle.x = this.width - this.paddle.w; };
-        this.canvas.addEventListener('mousemove', e => moveHandler(e.clientX)); this.canvas.addEventListener('touchmove', e => { e.preventDefault(); moveHandler(e.touches[0].clientX); }, { passive: false });
+        this.canvas.addEventListener('mousemove', e => moveHandler(e.clientX));
+        // Added touchstart for immediate response on tap
+        this.canvas.addEventListener('touchstart', e => { e.preventDefault(); moveHandler(e.touches[0].clientX); }, { passive: false });
+        this.canvas.addEventListener('touchmove', e => { e.preventDefault(); moveHandler(e.touches[0].clientX); }, { passive: false });
     }
     
     reset() {
@@ -931,13 +943,11 @@ class Game {
         GoogleSheetAPI.incrementPlayCount(); 
         
         this.audio.enable();
-        this.audio.tryPlayBGM();
     } 
     startRealGame() { this.restartGame(); }
     start() { this.showInstructions(); }
     
     restartGame() {
-        // 強制執行一次 resize 以確保寬度正確
         this.resize();
         
         this.audio.enable(); 
@@ -952,7 +962,6 @@ class Game {
         GoogleSheetAPI.incrementPlayCount();
         this.reset(); this.running = true; if(this.balls.length > 0) { this.balls[0].active = true; this.balls[0].dy = -this.balls[0].speed; this.balls[0].dx = (Math.random() - 0.5) * 6; } 
         
-        // CRITICAL FIX: 增加生成磚塊的安全鎖，防止寬度為0時生成失敗
         this.spawnBrickRowSafe();
         
         this.loop();
@@ -960,6 +969,8 @@ class Game {
 
     backToHome() {
         this.running = false;
+        this.audio.stopBGM();
+
         document.getElementById('instructionScreen').classList.add('hidden');
         document.getElementById('startScreen').classList.remove('hidden');
         document.getElementById('formScreen').classList.add('hidden');
@@ -968,13 +979,11 @@ class Game {
         GoogleSheetAPI.fetchLeaderboard(); this.reset(); this.drawStaticBackground();
     }
 
-    // 新增安全生成函數：如果寬度異常，會等待直到抓到正確寬度才生成
     spawnBrickRowSafe() {
-        // 如果寬度異常 (<=0 或 NaN)，延遲 100ms 再試一次，直到成功
         if (this.width <= 0 || isNaN(this.width)) {
             console.warn("Width invalid, retrying spawn...");
             setTimeout(() => {
-                this.resize(); // 再次嘗試校正尺寸
+                this.resize();
                 this.spawnBrickRowSafe();
             }, 100);
             return;
@@ -984,7 +993,6 @@ class Game {
 
     spawnBrickRow(count = 1, startY = null) {
         const cols = Math.floor(this.width / 60); 
-        // 防止 cols 為 0 導致無磚塊
         if(cols <= 0) return; 
         
         const offset = (this.width - (cols * 55)) / 2;
