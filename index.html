@@ -69,12 +69,8 @@
         .inst-icon-text { font-size: 10px; color: #888; line-height: 1.2; }
         .inst-icon-emoji.nuke { filter: drop-shadow(0 0 8px #ef4444); }
         .inst-icon-emoji.multi { filter: drop-shadow(0 0 8px #22c55e); }
-        .prize-box { background: rgba(10, 12, 16, 0.9); border: 1px solid #333; border-left: 3px solid #ffd700; border-radius: 8px; padding: 20px; width: 100%; max-width: 420px; margin-bottom: 10px; text-align: left; }
-        .prize-title { color: #ffd700; font-weight: bold; font-size: 14px; margin-bottom: 12px; letter-spacing: 2px; font-family: 'Orbitron'; }
-        .prize-item { display: flex; align-items: center; gap: 15px; margin-bottom: 10px; }
-        .prize-rank { font-family: 'Orbitron'; font-weight: bold; color: #666; width: 20px; }
-        .prize-name { color: white; font-weight: bold; font-size: 13px; }
-        .prize-desc { color: #888; font-size: 11px; }
+        .prize-box { background: transparent; border: none; padding: 0; width: 100%; max-width: 420px; margin-bottom: 10px; }
+        .prize-img { width: 100%; height: auto; border-radius: 8px; border: 1px solid #333; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
         .xmas-deco { position: absolute; pointer-events: none; z-index: 45; }
         .xmas-sock { top: 10%; right: 10%; font-size: 40px; transform: rotate(15deg); filter: drop-shadow(0 0 10px red); animation: sway 3s infinite ease-in-out alternate; }
         .xmas-ball { top: 15%; left: 10%; font-size: 35px; filter: drop-shadow(0 0 10px gold); animation: bounce-slow 4s infinite ease-in-out; }
@@ -186,27 +182,12 @@
                 </div>
             </div>
 
+            <!-- Updated Prize Box with Image -->
             <div class="prize-box">
-                <div class="prize-title">REWARDS</div>
-                <div class="prize-item">
-                    <div class="prize-rank text-yellow-400">01</div>
-                    <div>
-                        <div class="prize-name">10,000mAh 行動電源</div>
-                    </div>
-                </div>
-                <div class="prize-item">
-                    <div class="prize-rank text-gray-300">02</div>
-                    <div>
-                        <div class="prize-name">Snapware 康寧輕瓷保溫吸管杯</div>
-                    </div>
-                </div>
-                <div class="prize-item">
-                    <div class="prize-rank text-orange-400">03</div>
-                    <div>
-                        <div class="prize-name">放鬆筋膜槍</div>
-                    </div>
-                </div>
+                <!-- Fixed URL: Removed '/blob/' for correct raw image loading -->
+                <img src="https://raw.githubusercontent.com/andyhhsu/Galaxy-Christmas-Challenge/main/reward4.png" alt="Rewards List" class="prize-img">
             </div>
+            
             <div class="mb-4 text-[12px] text-[#00c3ff] text-center font-bold tracking-wide">
                 憑成績登錄截圖，可至指定三星智慧館兌換神秘好禮!
             </div>
@@ -768,9 +749,17 @@ class Game {
             this.paddle.w = this.width;
         }
 
-        let danger = false; this.bricks.forEach(b => { if(b.status === 1) { b.y += this.brickSpeed * (this.aiMode ? 0.5 : 1); if(b.y + b.h > this.paddle.y - 150) danger = true; if(b.y > this.height) b.status = 0; } });
+        let danger = false; 
+        this.bricks.forEach(b => { 
+            if(b.status === 1) { 
+                b.y += this.brickSpeed * (this.aiMode ? 0.5 : 1); 
+                if(b.y + b.h > this.paddle.y - 150) danger = true; 
+                if(b.y > this.height) b.status = 0; 
+            } 
+        });
         if(danger) this.dangerOverlay.classList.add('danger-pulse'); else this.dangerOverlay.classList.remove('danger-pulse');
-        if (this.balls.length === 0 && this.running) { this.gameOver("SIGNAL LOST"); }
+        
+        // Update balls
         this.balls.forEach((ball, index) => {
             if (!ball.active) return; 
             
@@ -785,7 +774,8 @@ class Game {
             const maxSpeed = 14; if(ball.dy > maxSpeed) ball.dy = maxSpeed; if(ball.dy < -maxSpeed) ball.dy = -maxSpeed;
             if(ball.x + ball.r > this.width || ball.x - ball.r < 0) { ball.dx *= -1; this.audio.playHit(); }
             if(ball.y - ball.r < 0) { ball.y = ball.r; ball.dy = Math.abs(ball.dy); this.audio.playHit(); }
-            if(ball.y > this.height) { this.balls.splice(index, 1); }
+            
+            // Collision Logic
             let hit = false;
             if(ball.dy > 0 && ball.x > this.paddle.x && ball.x < this.paddle.x + this.paddle.w) { if(ball.y + ball.r >= this.paddle.y && ball.prevY + ball.r <= this.paddle.y + Math.abs(ball.dy) + 10) hit = true; }
             if(!hit && ball.dy > 0) { if (ball.x + ball.r > this.paddle.x && ball.x - this.paddle.x + this.paddle.w && ball.y + ball.r > this.paddle.y && ball.y - ball.r < this.paddle.y + this.paddle.h) hit = true; }
@@ -804,6 +794,15 @@ class Game {
             }
             this.bricks.forEach(b => { if(b.status === 1 && ball.x > b.x && ball.x < b.x+b.w && ball.y > b.y && ball.y < b.y+b.h) { ball.dy *= -1; this.destroyBrick(b); } });
         });
+
+        // Remove dead balls safely using filter
+        this.balls = this.balls.filter(b => b.y <= this.height);
+
+        // Check Game Over immediately after filtering
+        if (this.balls.length === 0 && this.running) { 
+             this.gameOver("SIGNAL LOST"); 
+        }
+
         this.powerUps.forEach((p, i) => { p.y += 3; if(p.y + 15 > this.paddle.y && p.y - 15 < this.paddle.y + this.paddle.h && p.x > this.paddle.x && p.x < this.paddle.x + this.paddle.w) { this.activatePowerUp(p.type); this.powerUps.splice(i, 1); } if(p.y > this.height) this.powerUps.splice(i, 1); });
         this.bullets.forEach((b, i) => { b.y -= 15; this.bricks.forEach(brick => { if(brick.status === 1 && b.x > brick.x && b.x < brick.x + brick.w && b.y > brick.y && b.y < brick.y + brick.h) { this.destroyBrick(brick); this.bullets.splice(i, 1); } }); if(b.y < 0) this.bullets.splice(i, 1); });
         this.particles.forEach((p, i) => { p.x += p.dx; p.y += p.dy; p.life -= 0.05; if(p.life <= 0) this.particles.splice(i, 1); });
@@ -812,12 +811,12 @@ class Game {
     destroyBrick(b) {
         b.status = 0; this.score += 100; this.hudScore.innerText = this.score; this.audio.playBreak(); this.createParticles(b.x + b.w/2, b.y + b.h/2, b.color);
         
-        // Power up logic: 2% Gingerbread, 20% others
+        // Power up logic: 0.5% Gingerbread, 20% others
         const rand = Math.random();
         let type = null;
-        if (rand < 0.02) {
+        if (rand < 0.005) {
             type = 'gingerbread';
-        } else if (rand < 0.22) {
+        } else if (rand < 0.205) {
              const r = Math.random();
              if (r < 0.05) type = 'nuke';
              else if (r < 0.20) type = 'multiball';
