@@ -32,12 +32,12 @@
             height: 100vh;
         }
 
-        /* --- 遊戲容器 (RWD 適配核心) --- */
+        /* --- 遊戲容器 --- */
         #game-wrapper {
             position: relative;
             width: 100%;
             height: 100%;
-            max-width: 500px; /* 限制最大寬度，確保在電腦上也是直式體驗 */
+            max-width: 500px;
             background: radial-gradient(circle at 50% 120%, #0a1a3a 0%, #000000 80%);
             overflow: hidden;
             box-shadow: 0 0 50px rgba(0,0,0,0.8);
@@ -81,7 +81,7 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            background: rgba(0, 0, 0, 0.85); /* 深黑半透明 */
+            background: rgba(0, 0, 0, 0.85);
             backdrop-filter: blur(12px);
             z-index: 50;
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
@@ -131,7 +131,7 @@
         .hud-label { font-size: 10px; color: #00c3ff; letter-spacing: 2px; font-family: 'Orbitron'; opacity: 0.9; }
         .hud-value { font-family: 'Orbitron', sans-serif; font-size: 24px; color: white; font-weight: bold; text-shadow: 0 0 10px rgba(0, 195, 255, 0.5); line-height: 1; }
 
-        /* --- 排行榜樣式 (極簡科技風) --- */
+        /* --- 排行榜樣式 --- */
         .lb-container-mini {
             width: 100%; max-width: 340px;
             background: rgba(10, 20, 40, 0.6);
@@ -212,7 +212,6 @@
         .btn-primary:hover::after { left: 100%; }
         .btn-primary:active { transform: scale(0.98); }
         
-        /* Attract Loop Animation */
         .btn-attract {
             animation: neonPulse 2s infinite ease-in-out;
             border-width: 2px;
@@ -249,38 +248,55 @@
         }
         input.glass-input:focus { border-color: #00c3ff; }
 
-        /* --- 旗艦兌換券 --- */
+        /* --- 旗艦兌換券 (UI Updated) --- */
         .flagship-ticket {
             position: relative;
-            background: #080808;
-            background-image: linear-gradient(0deg, transparent 24%, rgba(255, 255, 255, .02) 25%, rgba(255, 255, 255, .02) 26%, transparent 27%, transparent 74%, rgba(255, 255, 255, .02) 75%, rgba(255, 255, 255, .02) 76%, transparent 77%, transparent), linear-gradient(90deg, transparent 24%, rgba(255, 255, 255, .02) 25%, rgba(255, 255, 255, .02) 26%, transparent 27%, transparent 74%, rgba(255, 255, 255, .02) 75%, rgba(255, 255, 255, .02) 76%, transparent 77%, transparent);
-            background-size: 50px 50px;
-            border: 1px solid #333;
+            background: transparent;
             border-radius: 16px;
-            padding: 24px;
             width: 100%;
             max-width: 360px;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+            margin-bottom: 10px; /* 減少下方間距，讓兌換文字更靠近 */
             overflow: hidden;
-            margin-bottom: 24px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+            background-image: url('https://raw.githubusercontent.com/andyhhsu/Galaxy-Christmas-Challenge/main/card.jpg');
+            background-size: cover;
+            background-position: center;
+            min-height: 180px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
         }
-        .flagship-ticket::after {
-            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
-            background: linear-gradient(to bottom right, rgba(255,255,255,0) 40%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0) 60%);
-            transform: rotate(30deg);
-            pointer-events: none;
+        
+        .ticket-overlay {
+            background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.6) 50%, transparent 100%);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            width: 100%;
         }
 
-        .ticket-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #222; }
-        .ticket-logo { color: #fff; font-weight: 900; font-size: 14px; letter-spacing: 3px; font-family: 'Orbitron'; }
-        .ticket-sub { color: #00c3ff; font-size: 10px; letter-spacing: 1px; margin-top: 4px; }
-        .ticket-score-val { color: #fff; font-family: 'Orbitron'; font-size: 32px; line-height: 1; text-shadow: 0 0 10px rgba(255,255,255,0.3); }
+        .ticket-info-block { text-align: left; }
+        .ticket-player-name { color: #fff; font-weight: bold; font-size: 18px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); font-family: 'Orbitron'; }
+        .ticket-label-sm { color: #00c3ff; font-size: 10px; letter-spacing: 1px; font-weight: bold; text-transform: uppercase; }
         
-        .ticket-body { display: flex; gap: 20px; align-items: center; position: relative; z-index: 2; }
-        .ticket-qr { width: 90px; height: 90px; background: white; padding: 5px; border-radius: 8px; flex-shrink: 0; }
-        .ticket-info h3 { color: #fff; font-size: 16px; font-weight: bold; margin-bottom: 6px; letter-spacing: 1px; }
-        .ticket-info p { color: #888; font-size: 12px; margin-bottom: 10px; line-height: 1.4; }
-        .store-tag { display: inline-block; border: 1px solid #00c3ff; color: #00c3ff; font-size: 10px; font-weight: bold; padding: 4px 8px; border-radius: 4px; letter-spacing: 1px; }
+        .ticket-score-block { text-align: right; }
+        /* 字體縮小至 24px 以避免遮擋圖片文字 */
+        .ticket-score-big { color: #ffd700; font-family: 'Orbitron'; font-size: 24px; font-weight: 900; line-height: 1; text-shadow: 0 2px 10px rgba(0,0,0,0.8); }
+
+        /* 兌換提醒文字 */
+        .redeem-text {
+            color: #ffd700;
+            font-size: 14px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+            animation: pulseText 2s infinite;
+            font-family: 'Noto Sans TC';
+            letter-spacing: 1px;
+        }
+        @keyframes pulseText { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
 
         /* --- 任務說明頁 --- */
         .instruction-box {
@@ -331,7 +347,7 @@
         @keyframes sway { from { transform: rotate(10deg); } to { transform: rotate(20deg); } }
         @keyframes bounce-slow { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
         
-        /* Total Play Count Style - Top Left */
+        /* Total Play Count */
         .total-play-count {
             position: absolute;
             top: 20px;
@@ -379,22 +395,21 @@
 
     </style>
 </head>
-<body>
+<body onclick="game.unlockAudio()"> 
+<!-- 增加 body onclick 以確保在任何點擊發生時解鎖音效 Context -->
 
-<!-- 聖誕背景音樂 (Jingle Bells by Kevin MacLeod, Creative Commons) -->
+<!-- 聖誕背景音樂 (增加 mp3 source 以相容更多裝置) -->
 <audio id="bgm" loop preload="auto">
     <source src="https://upload.wikimedia.org/wikipedia/commons/e/e0/Jingle_Bells_by_Kevin_MacLeod.ogg" type="audio/ogg">
+    <source src="https://cdnjs.cloudflare.com/ajax/libs/ion-sound/3.0.7/sounds/bell_ring.mp3" type="audio/mpeg"> <!-- Fallback dummy or actual link if available -->
     Your browser does not support the audio element.
 </audio>
 
 <div id="game-wrapper">
     
-    <!-- Music Toggle Button (修改：onclick 改為 toggleMute) -->
-    <div class="music-toggle muted" id="musicBtn" onclick="game.audio.toggleMute()">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M11 5L6 9H2v6h4l5 4V5z"></path>
-            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-        </svg>
+    <!-- Music Toggle Button -->
+    <div class="music-toggle" id="musicBtn" onclick="game.audio.toggleMute(); event.stopPropagation();">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
     </div>
 
     <div id="game-container">
@@ -427,7 +442,6 @@
 
             <div class="text-center mb-8 mt-4">
                 <h1 class="text-4xl md:text-6xl font-black text-white tracking-tighter mb-1" style="font-family: 'Orbitron'; text-shadow: 0 0 20px rgba(0,195,255,0.5);">GALAXY</h1>
-                <!-- 紅色字體 -->
                 <h2 class="text-base md:text-xl text-red-600 tracking-[0.3em] font-bold font-orbitron mt-2 whitespace-nowrap" style="text-shadow: 0 0 10px rgba(220,38,38,0.8);">CHRISTMAS CHALLENGE</h2>
             </div>
             
@@ -437,7 +451,7 @@
                 <div id="top3-list" class="flex flex-col gap-2">
                     <div class="text-center text-gray-500 text-xs font-mono">LOADING_DATA...</div>
                 </div>
-                <button class="btn-text w-full text-center" onclick="api.openFullLeaderboard()">查看完整排行榜 >></button>
+                <button class="btn-text w-full text-center" onclick="api.openFullLeaderboard(); event.stopPropagation();">查看完整排行榜 >></button>
             </div>
 
             <div class="w-full max-w-xs flex flex-col items-center">
@@ -550,28 +564,20 @@
             </div>
 
             <div class="flagship-ticket">
-                <div class="ticket-header">
-                    <div>
-                        <div class="ticket-logo">CHALLENGER</div>
-                        <div class="ticket-sub" id="ticketName">PLAYER</div>
+                <!-- Overlay content on top of the card image -->
+                <div class="ticket-overlay">
+                    <div class="ticket-info-block">
+                        <div class="ticket-label-sm">CHALLENGER</div>
+                        <div class="ticket-player-name" id="ticketName">PLAYER</div>
                     </div>
-                    <div class="text-right">
-                        <div class="ticket-score-label">SCORE</div>
-                        <div class="ticket-score-val" id="ticketScore">0</div>
-                    </div>
-                </div>
-                
-                <div class="ticket-body">
-                    <div class="ticket-qr">
-                        <img src="https://raw.githubusercontent.com/andyhhsu/Galaxy-Christmas-Challenge/main/LINE%40.png" class="w-full h-full object-contain">
-                    </div>
-                    <div class="ticket-info">
-                        <div class="store-tag">📍 三星旗艦館 - 微風南山</div>
-                        <h3 class="mt-2">FLAGSHIP GIFT</h3>
-                        <p>憑此券兌換限定好禮</p>
+                    <div class="ticket-score-block">
+                        <div class="ticket-label-sm">SCORE</div>
+                        <div class="ticket-score-big" id="ticketScore">0</div>
                     </div>
                 </div>
             </div>
+            <!-- 新增兌換提醒文字 -->
+            <div class="redeem-text">憑卷兌換神秘小禮!</div>
 
             <div class="w-full max-w-xs flex flex-col gap-3">
                 <button class="btn-secondary border-[#00c3ff] text-[#00c3ff]" onclick="api.openFullLeaderboard()">查看排名</button>
@@ -722,12 +728,19 @@ class SoundManager {
         // Audio State (Combined BGM & SFX)
         this.bgmEl = document.getElementById('bgm');
         this.bgmPlaying = false;
-        this.muted = true; // Default muted
+        this.muted = false; // Default Unmuted
     }
     
     enable() { 
-        if (this.ctx.state === 'suspended') this.ctx.resume(); 
-        this.enabled = true; 
+        // 關鍵修正：確保在任何使用者點擊後恢復 Audio Context
+        if (this.ctx.state === 'suspended') {
+            this.ctx.resume().then(() => {
+                this.enabled = true;
+                console.log("Audio Context Resumed");
+            });
+        } else {
+            this.enabled = true;
+        }
     }
 
     // Toggle both BGM and SFX
@@ -745,7 +758,13 @@ class SoundManager {
         } else {
             // UNMUTE
             this.bgmEl.volume = 0.4;
-            this.bgmEl.play().catch(e => console.log("Interact first"));
+            // 加入 Promise 處理，避免錯誤
+            const playPromise = this.bgmEl.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(error => {
+                   console.log("Playback prevented. Interaction needed.");
+                });
+            }
             this.bgmPlaying = true;
             btn.classList.remove('muted');
             // Show Sound Icon
@@ -754,27 +773,35 @@ class SoundManager {
     }
 
     tryPlayBGM() {
-        // Only play if NOT muted
         if (!this.muted) {
-            this.bgmEl.play().catch(e => console.log("Audio autoplay blocked"));
+            this.bgmEl.volume = 0.4;
+            const playPromise = this.bgmEl.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(error => {
+                   console.log("Autoplay prevented. Waiting for interaction.");
+                });
+            }
         }
     }
 
     playTone(freq, type, duration, slideTo) { 
-        // Check global mute state
         if(!this.enabled || this.muted) return; 
         
-        const osc = this.ctx.createOscillator(); 
-        const gain = this.ctx.createGain(); 
-        osc.type = type; 
-        osc.frequency.setValueAtTime(freq, this.ctx.currentTime); 
-        if(slideTo) osc.frequency.exponentialRampToValueAtTime(slideTo, this.ctx.currentTime + duration); 
-        gain.gain.setValueAtTime(0.5, this.ctx.currentTime); 
-        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration); 
-        osc.connect(gain); 
-        gain.connect(this.masterGain); 
-        osc.start(); 
-        osc.stop(this.ctx.currentTime + duration); 
+        try {
+            const osc = this.ctx.createOscillator(); 
+            const gain = this.ctx.createGain(); 
+            osc.type = type; 
+            osc.frequency.setValueAtTime(freq, this.ctx.currentTime); 
+            if(slideTo) osc.frequency.exponentialRampToValueAtTime(slideTo, this.ctx.currentTime + duration); 
+            gain.gain.setValueAtTime(0.5, this.ctx.currentTime); 
+            gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration); 
+            osc.connect(gain); 
+            gain.connect(this.masterGain); 
+            osc.start(); 
+            osc.stop(this.ctx.currentTime + duration); 
+        } catch(e) {
+            // Ignore minor audio errors
+        }
     }
     
     playHit() { this.playTone(300, 'sine', 0.1); }
@@ -798,47 +825,51 @@ class Game {
         this.flashOverlay = document.getElementById('flash-overlay');
         this.particles = []; this.initParticles();
         this.baseBallSpeed = 5.0;
+        
+        this.bgImage = new Image();
+        this.bgImage.src = 'https://raw.githubusercontent.com/andyhhsu/Galaxy-Christmas-Challenge/main/background.png';
+
         this.reset(); this.bindEvents();
         window.addEventListener('resize', () => { this.resize(); this.initParticles(); if(!this.running) this.drawStaticBackground(); });
+        
+        this.bgImage.onload = () => { if(!this.running) this.drawStaticBackground(); };
+        
         this.drawStaticBackground();
         GoogleSheetAPI.init();
         this.idleTime = null; this.resetIdleTimer = this.resetIdleTimer.bind(this);
         ['mousemove', 'mousedown', 'keypress', 'touchmove', 'click'].forEach(evt => window.addEventListener(evt, this.resetIdleTimer));
         this.resetIdleTimer();
     }
+    
+    unlockAudio() {
+        this.audio.enable();
+    }
 
     drawPaddle(x, y, w, h, state, color) {
-        // 1. Frame (Metallic Gradient)
         const grad = this.ctx.createLinearGradient(x, y, x, y + h);
         grad.addColorStop(0, '#333'); grad.addColorStop(0.2, '#666'); grad.addColorStop(0.5, '#222'); grad.addColorStop(1, '#111');
         this.ctx.fillStyle = grad;
-        this.ctx.shadowBlur = 15; this.ctx.shadowColor = color; // Glow
+        this.ctx.shadowBlur = 15; this.ctx.shadowColor = color; 
         this.ctx.beginPath(); this.ctx.roundRect(x, y, w, h, 4); this.ctx.fill(); this.ctx.shadowBlur = 0;
 
-        // 2. Screen (Inner)
         const margin = 2;
         const sw = w - (margin*2);
         const sh = h - (margin*2);
-        this.ctx.fillStyle = color; // Base screen color
+        this.ctx.fillStyle = color; 
         
         if (state === 'cover') {
             this.ctx.fillRect(x+margin, y+margin, sw, sh);
-            // Camera hole
             this.ctx.fillStyle = '#000'; this.ctx.beginPath(); this.ctx.arc(x + w/2, y + 4, 1.5, 0, Math.PI*2); this.ctx.fill();
         } else if (state === 'main') {
-            // Dual screen with hinge
             const half = sw / 2;
             this.ctx.fillRect(x+margin, y+margin, half-1, sh);
             this.ctx.fillRect(x+margin+half+1, y+margin, half-1, sh);
-            // Hinge
             this.ctx.fillStyle = '#444'; this.ctx.fillRect(x+w/2-1, y, 2, h);
         } else if (state === 'trifold') {
-            // Tri screen
             const third = sw / 3;
             this.ctx.fillRect(x+margin, y+margin, third-1, sh);
             this.ctx.fillRect(x+margin+third+1, y+margin, third-1, sh);
             this.ctx.fillRect(x+margin+(third*2)+2, y+margin, third-1, sh);
-            // Hinges
             this.ctx.fillStyle = '#444';
             this.ctx.fillRect(x+w/3-1, y, 2, h);
             this.ctx.fillRect(x+(w*2)/3-1, y, 2, h);
@@ -847,9 +878,18 @@ class Game {
 
     resize() { 
         const wrapper = document.getElementById('game-wrapper'); 
-        // Fix for black screen: Ensure we get a valid width/height
-        this.width = wrapper.clientWidth || window.innerWidth; 
-        this.height = wrapper.clientHeight || window.innerHeight; 
+        // CRITICAL FIX: 某些大型看板或 WebView 的 clientWidth 在初始可能為 0
+        // 加入強制回退機制：如果容器寬度異常小，直接抓取 window 寬度
+        let w = wrapper.clientWidth;
+        let h = wrapper.clientHeight;
+        
+        if (w < 10 || h < 10) {
+            w = window.innerWidth;
+            h = window.innerHeight;
+        }
+
+        this.width = w; 
+        this.height = h; 
         this.canvas.width = this.width; 
         this.canvas.height = this.height; 
     }
@@ -866,7 +906,6 @@ class Game {
         const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
         this.brickSpeed = isTouch ? 1.2 : 1.0; this.baseBallSpeed = isTouch ? 2.5 : 5.0;
         
-        // Reset paddle position based on current height
         const paddleY = this.height - 120;
         this.paddle = { w: 100, h: 24, x: this.width/2 - 50, y: paddleY, color: '#00c3ff', state: 'cover' };
         
@@ -879,14 +918,14 @@ class Game {
         document.getElementById('instructionScreen').classList.remove('hidden'); 
         GoogleSheetAPI.incrementPlayCount(); 
         
-        // 在此處開啟音效引擎，但不一定播放音樂(除非使用者已開啟)
         this.audio.enable();
+        this.audio.tryPlayBGM();
     } 
     startRealGame() { this.restartGame(); }
     start() { this.showInstructions(); }
     
     restartGame() {
-        // Fix for black screen: Force resize to ensure canvas dimensions are correct before spawning
+        // 強制執行一次 resize 以確保寬度正確
         this.resize();
         
         this.audio.enable(); 
@@ -901,13 +940,8 @@ class Game {
         GoogleSheetAPI.incrementPlayCount();
         this.reset(); this.running = true; if(this.balls.length > 0) { this.balls[0].active = true; this.balls[0].dy = -this.balls[0].speed; this.balls[0].dx = (Math.random() - 0.5) * 6; } 
         
-        // Safeguard: Ensure we have width
-        if (this.width > 0) {
-            this.spawnBrickRow(4); 
-        } else {
-            // Fallback if width is 0 (shouldn't happen with new resize)
-            setTimeout(() => { this.resize(); this.spawnBrickRow(4); }, 100);
-        }
+        // CRITICAL FIX: 增加生成磚塊的安全鎖
+        this.spawnBrickRowSafe();
         
         this.loop();
     }
@@ -922,9 +956,25 @@ class Game {
         GoogleSheetAPI.fetchLeaderboard(); this.reset(); this.drawStaticBackground();
     }
 
+    // 新增安全生成函數
+    spawnBrickRowSafe() {
+        // 如果寬度異常，延遲 100ms 再試一次，直到成功
+        if (this.width <= 0 || isNaN(this.width)) {
+            console.warn("Width invalid, retrying spawn...");
+            setTimeout(() => {
+                this.resize();
+                this.spawnBrickRowSafe();
+            }, 100);
+            return;
+        }
+        this.spawnBrickRow(4);
+    }
+
     spawnBrickRow(count = 1, startY = null) {
         const cols = Math.floor(this.width / 60); 
-        if(cols <= 0) return; // Prevent infinite loop or errors
+        // 防止 cols 為 0 導致無磚塊
+        if(cols <= 0) return; 
+        
         const offset = (this.width - (cols * 55)) / 2;
         for(let r=0; r<count; r++) {
             for(let c=0; c<cols; c++) {
@@ -992,9 +1042,34 @@ class Game {
     shootBullet() { this.audio.playShoot(); this.bullets.push({ x: this.paddle.x + 10, y: this.paddle.y, w: 4, h: 15 }); this.bullets.push({ x: this.paddle.x + this.paddle.w - 14, y: this.paddle.y, w: 4, h: 15 }); }
     createParticles(x, y, color) { for(let i=0; i<8; i++) this.particles.push({ x: x, y: y, dx: (Math.random()-0.5)*5, dy: (Math.random()-0.5)*5, life: 1, color: color }); }
     createFloatText(text, x, y) { const div = document.createElement('div'); div.innerText = text; div.style.position = 'absolute'; div.style.left = x + 'px'; div.style.top = y + 'px'; div.style.color = '#fff'; div.style.fontWeight = 'bold'; div.style.fontSize = '20px'; div.style.textShadow = '0 0 10px #00c3ff'; div.style.pointerEvents = 'none'; div.style.transition = 'all 1s'; document.body.appendChild(div); requestAnimationFrame(() => { div.style.top = (y - 100) + 'px'; div.style.opacity = 0; }); setTimeout(() => div.remove(), 1000); }
-    drawStaticBackground() { this.ctx.fillStyle = '#000'; this.ctx.fillRect(0, 0, this.width, this.height); this.ctx.fillStyle = 'rgba(0, 195, 255, 0.5)'; if(this.bgParticles) { this.bgParticles.forEach(p => { this.ctx.globalAlpha = p.alpha; this.ctx.fillRect(p.x, p.y, p.size, p.size); this.ctx.globalAlpha = 1; }); } }
+    
+    drawStaticBackground() { 
+        if(this.bgImage.complete && this.bgImage.naturalWidth > 0) {
+             this.ctx.drawImage(this.bgImage, 0, 0, this.width, this.height);
+        } else {
+             this.ctx.fillStyle = '#000'; 
+             this.ctx.fillRect(0, 0, this.width, this.height);
+        }
+        
+        this.ctx.fillStyle = 'rgba(0, 195, 255, 0.5)'; 
+        if(this.bgParticles) { 
+            this.bgParticles.forEach(p => { 
+                this.ctx.globalAlpha = p.alpha; 
+                this.ctx.fillRect(p.x, p.y, p.size, p.size); 
+                this.ctx.globalAlpha = 1; 
+            }); 
+        } 
+    }
+
     draw() {
-        this.ctx.fillStyle = '#000'; this.ctx.fillRect(0, 0, this.width, this.height);
+        // Draw Background Image if loaded, otherwise black
+        if(this.bgImage.complete && this.bgImage.naturalWidth > 0) {
+            this.ctx.drawImage(this.bgImage, 0, 0, this.width, this.height);
+        } else {
+            this.ctx.fillStyle = '#000'; 
+            this.ctx.fillRect(0, 0, this.width, this.height);
+        }
+
         this.ctx.fillStyle = 'rgba(0, 195, 255, 0.5)'; this.bgParticles.forEach(p => { this.ctx.globalAlpha = p.alpha; this.ctx.fillRect(p.x, p.y, p.size, p.size); this.ctx.globalAlpha = 1; });
         this.ctx.fillStyle = 'rgba(0, 0, 0, 0.3)'; this.ctx.fillRect(0, 0, this.width, this.height);
         this.ctx.strokeStyle = 'rgba(0, 195, 255, 0.3)'; this.ctx.beginPath(); this.ctx.setLineDash([5, 15]); this.ctx.moveTo(0, this.paddle.y - 10); this.ctx.lineTo(this.width, this.paddle.y - 10); this.ctx.stroke(); this.ctx.setLineDash([]);
