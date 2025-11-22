@@ -37,7 +37,29 @@
         .rank-1 { color: #ffd700 !important; font-weight: 900; text-shadow: 0 0 15px rgba(255, 215, 0, 0.4); font-size: 1.1em; }
         .rank-2 { color: #e0e0e0 !important; font-weight: bold; }
         .rank-3 { color: #c58f60 !important; font-weight: bold; }
-        .btn-primary { background: #000; border: 1px solid #00c3ff; padding: 16px 40px; color: #00c3ff; font-family: 'Orbitron', sans-serif; font-weight: bold; font-size: 18px; letter-spacing: 2px; border-radius: 50px; cursor: pointer; box-shadow: 0 0 15px rgba(0, 195, 255, 0.2); transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1); text-transform: uppercase; width: 100%; position: relative; overflow: hidden; }
+        .btn-primary { 
+            background: #000; 
+            border: 1px solid #00c3ff; 
+            padding: 16px 40px; 
+            color: #00c3ff; 
+            font-family: 'Orbitron', sans-serif; 
+            font-weight: bold; 
+            font-size: 18px; 
+            letter-spacing: 2px; 
+            border-radius: 50px; 
+            cursor: pointer; 
+            box-shadow: 0 0 15px rgba(0, 195, 255, 0.2); 
+            transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1); 
+            text-transform: uppercase; 
+            width: 100%; 
+            position: relative; 
+            overflow: hidden;
+            /* Fixed centering */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            line-height: 1.2;
+        }
         .btn-primary::after { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(0, 195, 255, 0.2), transparent); transition: 0.5s; }
         .btn-primary:hover { background: #00c3ff; color: #000; box-shadow: 0 0 30px rgba(0, 195, 255, 0.6); }
         .btn-primary:hover::after { left: 100%; }
@@ -161,7 +183,7 @@
                 <div class="inst-icons">
                     <div class="inst-icon-item">
                         <div class="inst-icon-emoji">📱</div>
-                        <div class="inst-icon-text">視野展開</div>
+                        <div class="inst-icon-text">摺疊擴展</div>
                     </div>
                     <div class="inst-icon-item">
                         <div class="inst-icon-emoji">🖊️</div>
@@ -184,7 +206,6 @@
 
             <!-- Updated Prize Box with Image -->
             <div class="prize-box">
-                <!-- Fixed URL: Removed '/blob/' for correct raw image loading -->
                 <img src="https://raw.githubusercontent.com/andyhhsu/Galaxy-Christmas-Challenge/main/reward4.png" alt="Rewards List" class="prize-img">
             </div>
             
@@ -397,6 +418,19 @@ class SoundManager {
         this.bgmPlaying = false;
         this.muted = false; // Default Unmuted
         this.shouldPlay = false; // 嚴格控制播放旗標
+
+        // Handle Page Visibility for BGM (Fix for Mobile/LINE)
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                // Always pause BGM when hidden
+                this.bgmEl.pause();
+            } else {
+                // Resume only if we are in a state where it SHOULD be playing
+                if (this.shouldPlay && !this.muted) {
+                    this.bgmEl.play().catch(e => console.log("Resume failed", e));
+                }
+            }
+        });
     }
     
     enable() { 
@@ -754,6 +788,13 @@ class Game {
             if(b.status === 1) { 
                 b.y += this.brickSpeed * (this.aiMode ? 0.5 : 1); 
                 if(b.y + b.h > this.paddle.y - 150) danger = true; 
+                
+                // Gingerbread Crush Logic
+                if (this.gingerbreadMode && b.y + b.h >= this.paddle.y) {
+                    this.destroyBrick(b);
+                    return; // brick destroyed, skip bottom check
+                }
+
                 if(b.y > this.height) b.status = 0; 
             } 
         });
@@ -764,7 +805,7 @@ class Game {
             if (!ball.active) return; 
             
             // Fix: Prevent vertical locking
-            if (Math.abs(ball.dx) < 1.0) {
+            if (Math.abs(ball.dx) < 1.5) {
                  ball.dx = (ball.dx >= 0 ? 1 : -1) * 2.0;
             }
 
@@ -772,7 +813,18 @@ class Game {
             ball.x += ball.dx * (this.aiMode ? 0.6 : 1); 
             ball.y += ball.dy * (this.aiMode ? 0.6 : 1);
             const maxSpeed = 14; if(ball.dy > maxSpeed) ball.dy = maxSpeed; if(ball.dy < -maxSpeed) ball.dy = -maxSpeed;
-            if(ball.x + ball.r > this.width || ball.x - ball.r < 0) { ball.dx *= -1; this.audio.playHit(); }
+            
+            // Wall collision with push-back
+            if(ball.x + ball.r > this.width) { 
+                ball.x = this.width - ball.r; 
+                ball.dx *= -1; 
+                this.audio.playHit(); 
+            } else if(ball.x - ball.r < 0) { 
+                ball.x = ball.r; 
+                ball.dx *= -1; 
+                this.audio.playHit(); 
+            }
+
             if(ball.y - ball.r < 0) { ball.y = ball.r; ball.dy = Math.abs(ball.dy); this.audio.playHit(); }
             
             // Collision Logic
