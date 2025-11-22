@@ -27,6 +27,14 @@
         .modal-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.95); z-index: 60; display: flex; flex-direction: column; align-items: center; padding-top: 60px; transition: transform 0.4s cubic-bezier(0.19, 1, 0.22, 1); transform: translateY(100%); }
         .modal-layer.active { transform: translateY(0); }
         #hud { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); padding: 8px 20px; display: flex; flex-direction: column; align-items: center; pointer-events: none; z-index: 10; background: rgba(0,0,0,0.5); border-radius: 20px; border: 1px solid rgba(0, 195, 255, 0.3); backdrop-filter: blur(4px); }
+        
+        /* New Combo HUD Styles */
+        #combo-hud { position: absolute; top: 20px; left: 20px; pointer-events: none; z-index: 10; display: flex; flex-direction: column; align-items: flex-start; }
+        .combo-label { font-size: 10px; color: #ffd700; letter-spacing: 2px; font-family: 'Orbitron'; opacity: 0.8; font-weight: bold; margin-bottom: -5px; }
+        .combo-value { font-family: 'Orbitron', sans-serif; font-size: 36px; color: #ffd700; font-weight: 900; text-shadow: 0 0 15px rgba(255, 215, 0, 0.6); line-height: 1; transition: transform 0.1s; font-style: italic; }
+        .combo-pulse .combo-value { animation: comboPop 0.15s ease-out; color: #fff; }
+        @keyframes comboPop { 0% { transform: scale(1); } 50% { transform: scale(1.3); } 100% { transform: scale(1); } }
+
         .hud-label { font-size: 10px; color: #00c3ff; letter-spacing: 2px; font-family: 'Orbitron'; opacity: 0.9; }
         .hud-value { font-family: 'Orbitron', sans-serif; font-size: 24px; color: white; font-weight: bold; text-shadow: 0 0 10px rgba(0, 195, 255, 0.5); line-height: 1; }
         .lb-container-mini { width: 100%; max-width: 340px; background: rgba(10, 20, 40, 0.6); border: 1px solid rgba(0, 195, 255, 0.3); border-radius: 12px; padding: 20px; margin-bottom: 30px; box-shadow: 0 0 30px rgba(0, 195, 255, 0.05); backdrop-filter: blur(5px); }
@@ -54,7 +62,6 @@
             width: 100%; 
             position: relative; 
             overflow: hidden;
-            /* Fixed centering */
             display: flex;
             justify-content: center;
             align-items: center;
@@ -124,6 +131,12 @@
         <div id="danger-overlay"></div>
         <div id="flash-overlay"></div>
 
+        <!-- Combo Display -->
+        <div id="combo-hud" class="hidden">
+            <div class="combo-label">COMBO</div>
+            <div class="combo-value" id="comboVal">0</div>
+        </div>
+
         <!-- HUD -->
         <div id="hud">
             <div class="hud-item">
@@ -177,7 +190,7 @@
                 <div class="inst-title">HOW TO PLAY</div>
                 <ul class="inst-list">
                     <li>滑動擋板，接住能量球。</li>
-                    <li>擊碎上方落下的 <span class="text-red-400 font-bold">工作磚塊</span>。</li>
+                    <li>連續擊碎磚塊可累積 <span class="text-[#ffd700] font-bold">COMBO</span> 加分。</li>
                     <li>接住道具觸發 Galaxy 特效：</li>
                 </ul>
                 <div class="inst-icons">
@@ -206,11 +219,12 @@
 
             <!-- Updated Prize Box with Image -->
             <div class="prize-box">
+                <div class="text-[#ffd700] text-xs font-bold mb-2 text-center tracking-widest">排行挑戰禮 (2026/1/2公布臉書粉專)</div>
                 <img src="https://raw.githubusercontent.com/andyhhsu/Galaxy-Christmas-Challenge/main/reward4.png" alt="Rewards List" class="prize-img">
             </div>
             
             <div class="mb-4 text-[12px] text-[#00c3ff] text-center font-bold tracking-wide">
-                憑成績登錄截圖，可至指定三星智慧館兌換神秘好禮!
+                憑成績登錄截圖，可至指定三星智慧館兌換「神秘小禮」
             </div>
 
             <button class="btn-primary max-w-xs mt-2" onclick="game.startRealGame()">開始遊戲</button>
@@ -268,7 +282,7 @@
                 </div>
             </div>
             <!-- 新增兌換提醒文字 -->
-            <div class="redeem-text">憑此頁面截圖兌換神秘小禮!</div>
+            <div class="redeem-text">憑此頁面截圖，可至指定三星智慧館兌換「神秘小禮」</div>
 
             <div class="w-full max-w-xs flex flex-col gap-3">
                 <button class="btn-secondary border-[#00c3ff] text-[#00c3ff]" onclick="api.openFullLeaderboard()">查看排名</button>
@@ -299,7 +313,7 @@ const GoogleSheetAPI = {
     get scriptURL() { return `https://script.google.com/macros/s/${this.scriptID}/exec`; },
 
     leaderboardData: [],
-    globalPlayCount: 1280,
+    globalPlayCount: 0, // Set initial to 0 to reflect backend if empty
 
     mockData: [ { name: "AI_AGENT", score: 15000 }, { name: "Z_FOLD_PRO", score: 12500 }, { name: "VIP_MEMBER", score: 9800 }, { name: "GUEST_001", score: 5000 } ],
 
@@ -309,18 +323,25 @@ const GoogleSheetAPI = {
     },
 
     updatePlayCount: function() {
-        const stored = localStorage.getItem('playCount');
-        if (stored) this.globalPlayCount = parseInt(stored);
-        document.getElementById('globalPlayCount').innerText = this.globalPlayCount.toLocaleString();
+        // FIX 1: 加上時間戳記 t=Date.now() 強制避開快取，解決歸零後顯示舊資料問題
+        const el = document.getElementById('globalPlayCount');
+        if(el) el.innerText = "...";
 
-        fetch(this.scriptURL + "?action=get_play_count")
+        fetch(this.scriptURL + "?action=get_play_count&t=" + Date.now())
             .then(res => res.json())
             .then(data => {
-                this.globalPlayCount = data.count;
-                localStorage.setItem('playCount', this.globalPlayCount);
-                document.getElementById('globalPlayCount').innerText = this.globalPlayCount.toLocaleString();
+                if (typeof data.count === 'number') {
+                    this.globalPlayCount = data.count;
+                    if(el) el.innerText = this.globalPlayCount.toLocaleString();
+                    localStorage.setItem('playCount', this.globalPlayCount);
+                }
             })
-            .catch(console.error);
+            .catch(e => {
+                console.error(e);
+                // Fallback only if API completely fails
+                const stored = localStorage.getItem('playCount');
+                if (stored && el) el.innerText = parseInt(stored).toLocaleString();
+            });
     },
 
     incrementPlayCount: function() {
@@ -413,19 +434,15 @@ class SoundManager {
         this.masterGain.connect(this.ctx.destination); 
         this.enabled = false; 
         
-        // Audio State (Combined BGM & SFX)
         this.bgmEl = document.getElementById('bgm');
         this.bgmPlaying = false;
-        this.muted = false; // Default Unmuted
-        this.shouldPlay = false; // 嚴格控制播放旗標
+        this.muted = false; 
+        this.shouldPlay = false; 
 
-        // Handle Page Visibility for BGM (Fix for Mobile/LINE)
         document.addEventListener('visibilitychange', () => {
             if (document.hidden) {
-                // Always pause BGM when hidden
                 this.bgmEl.pause();
             } else {
-                // Resume only if we are in a state where it SHOULD be playing
                 if (this.shouldPlay && !this.muted) {
                     this.bgmEl.play().catch(e => console.log("Resume failed", e));
                 }
@@ -434,37 +451,28 @@ class SoundManager {
     }
     
     enable() { 
-        // 關鍵修正：確保在任何使用者點擊後恢復 Audio Context
         if (this.ctx.state === 'suspended') {
             this.ctx.resume().then(() => {
                 this.enabled = true;
-                console.log("Audio Context Resumed");
             });
         } else {
             this.enabled = true;
         }
     }
 
-    // Toggle both BGM and SFX
     toggleMute() {
         this.muted = !this.muted;
         const btn = document.getElementById('musicBtn');
         
         if (this.muted) {
-            // MUTE
             this.bgmEl.pause();
             this.bgmPlaying = false;
             btn.classList.add('muted');
-            // Show Mute Icon
             btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"></path><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>`;
         } else {
-            // UNMUTE
             btn.classList.remove('muted');
-            // Show Sound Icon
             btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>`;
             
-            // 只有在遊戲狀態允許播放時 (shouldPlay 為 true) 才播放音樂
-            // 避免在主畫面解鎖靜音時突然播放音樂
             if (this.shouldPlay) {
                 this.bgmEl.volume = 0.4;
                 const playPromise = this.bgmEl.play();
@@ -494,15 +502,14 @@ class SoundManager {
     }
 
     stopBGM() {
-        this.shouldPlay = false; // 標記為「不應播放」狀態
+        this.shouldPlay = false; 
         this.bgmEl.pause();
-        this.bgmEl.currentTime = 0; // 重置音樂進度
+        this.bgmEl.currentTime = 0; 
         this.bgmPlaying = false;
     }
 
     playTone(freq, type, duration, slideTo) { 
         if(!this.enabled || this.muted) return; 
-        
         try {
             const osc = this.ctx.createOscillator(); 
             const gain = this.ctx.createGain(); 
@@ -515,9 +522,7 @@ class SoundManager {
             gain.connect(this.masterGain); 
             osc.start(); 
             osc.stop(this.ctx.currentTime + duration); 
-        } catch(e) {
-            // Ignore minor audio errors
-        }
+        } catch(e) {}
     }
     
     playHit() { this.playTone(300, 'sine', 0.1); }
@@ -535,7 +540,6 @@ class Game {
         this.ctx = this.canvas.getContext('2d');
         this.audio = new SoundManager();
         
-        // CRITICAL FIX: Initialize with fallback if clientWidth is 0 (common on some displays)
         this.width = this.canvas.clientWidth || window.innerWidth; 
         this.height = this.canvas.clientHeight || window.innerHeight; 
         this.canvas.width = this.width; 
@@ -552,7 +556,6 @@ class Game {
         this.bgImage = new Image();
         this.bgImage.src = 'https://raw.githubusercontent.com/andyhhsu/Galaxy-Christmas-Challenge/main/background.png';
         
-        // Gingerbread power-up image
         this.cookieImage = new Image();
         this.cookieImage.src = 'https://raw.githubusercontent.com/andyhhsu/Galaxy-Christmas-Challenge/main/cookie.png';
 
@@ -572,7 +575,6 @@ class Game {
         this.audio.enable();
     }
 
-    // CRITICAL FIX: Replace ctx.roundRect with manual path drawing for older browser compatibility
     drawRoundedRect(x, y, w, h, r) {
         if (w < 2 * r) r = w / 2;
         if (h < 2 * r) r = h / 2;
@@ -588,8 +590,7 @@ class Game {
 
     drawPaddle(x, y, w, h, state, color) {
         if (this.gingerbreadMode && this.cookieImage.complete && this.cookieImage.naturalWidth > 0) {
-             // Draw tiled gingerbread men across the full width
-             const pSize = 40; // Size of gingerbread man
+             const pSize = 40; 
              const count = Math.ceil(w / pSize); 
              for(let i=0; i<count; i++) {
                  this.ctx.drawImage(this.cookieImage, x + i * pSize, y - 10, pSize, pSize);
@@ -602,7 +603,6 @@ class Game {
         this.ctx.fillStyle = grad;
         this.ctx.shadowBlur = 15; this.ctx.shadowColor = color; 
         
-        // Use compatible drawing method
         this.drawRoundedRect(x, y, w, h, 4);
         this.ctx.shadowBlur = 0;
 
@@ -632,12 +632,9 @@ class Game {
 
     resize() { 
         const wrapper = document.getElementById('game-wrapper'); 
-        // CRITICAL FIX: 某些大型看板或 WebView 的 clientWidth 在初始可能為 0
-        // 加入強制回退機制：如果容器寬度異常小，直接抓取 window 寬度
         let w = wrapper.clientWidth;
         let h = wrapper.clientHeight;
         
-        // 如果檢測到的寬高極小(例如瀏覽器尚未排版完成)，強制使用 window inner 大小
         if (w < 10 || h < 10) {
             w = window.innerWidth;
             h = window.innerHeight;
@@ -648,28 +645,35 @@ class Game {
         this.canvas.width = this.width; 
         this.canvas.height = this.height; 
 
-        // 關鍵修復: 當螢幕尺寸改變(或初始化延遲)時，必須強制將擋板校正回底部
-        // 否則在大型看板上，擋板可能會被畫在錯誤的 Y 座標 (例如 -120) 導致看不見
         if (this.paddle) {
             this.paddle.y = this.height - 120;
-            // 確保擋板不會超出右邊界
             if (this.paddle.x > this.width - this.paddle.w) {
                 this.paddle.x = this.width - this.paddle.w;
             }
         }
     }
-    resetIdleTimer() { clearTimeout(this.idleTime); this.idleTime = setTimeout(() => { if (document.getElementById('startScreen').classList.contains('hidden')) this.backToHome(); }, 15000); }
+    resetIdleTimer() { 
+        clearTimeout(this.idleTime); 
+        this.idleTime = setTimeout(() => { 
+            if (document.getElementById('startScreen').classList.contains('hidden') && !this.running) {
+                this.backToHome(); 
+            }
+        }, 30000); 
+    }
     initParticles() { this.bgParticles = []; for(let i=0; i<40; i++) this.bgParticles.push({ x: Math.random() * this.width, y: Math.random() * this.height, size: Math.random() * 2 + 1, speed: Math.random() * 0.5 + 0.2, alpha: Math.random() * 0.5 }); }
     bindEvents() {
         const moveHandler = (x) => { if(!this.running) return; const wrapper = document.getElementById('game-wrapper'); const rect = wrapper.getBoundingClientRect(); const relativeX = x - rect.left; this.paddle.x = relativeX - this.paddle.w / 2; if(this.paddle.x < 0) this.paddle.x = 0; if(this.paddle.x + this.paddle.w > this.width) this.paddle.x = this.width - this.paddle.w; };
         this.canvas.addEventListener('mousemove', e => moveHandler(e.clientX));
-        // Added touchstart for immediate response on tap
         this.canvas.addEventListener('touchstart', e => { e.preventDefault(); moveHandler(e.touches[0].clientX); }, { passive: false });
         this.canvas.addEventListener('touchmove', e => { e.preventDefault(); moveHandler(e.touches[0].clientX); }, { passive: false });
     }
     
     reset() {
         this.running = false; this.score = 0; if(this.hudScore) this.hudScore.innerText = "0";
+        this.combo = 0; 
+        const comboVal = document.getElementById('comboVal');
+        if(comboVal) comboVal.innerText = "0";
+        
         this.difficultyLevel = 1; this.lastBrickSpawnTime = 0; this.lastShotTime = 0;
         const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
         this.brickSpeed = isTouch ? 1.2 : 1.0; this.baseBallSpeed = isTouch ? 2.5 : 5.0;
@@ -685,41 +689,35 @@ class Game {
         document.getElementById('startScreen').classList.add('hidden'); 
         document.getElementById('instructionScreen').classList.remove('hidden'); 
         GoogleSheetAPI.incrementPlayCount(); 
-        
         this.audio.enable();
-        // 修改：說明頁面時不播放音樂，等待進入遊戲
     } 
     startRealGame() { this.restartGame(); }
     start() { this.showInstructions(); }
     
     restartGame() {
-        // 強制執行一次 resize 以確保寬度正確
         this.resize();
-        
         this.audio.enable(); 
         this.audio.playPowerUp();
-        
-        // 修改：進入遊戲時才開始播放 BGM
         this.audio.tryPlayBGM(); 
 
         document.getElementById('instructionScreen').classList.add('hidden');
         document.getElementById('formScreen').classList.add('hidden'); 
         document.getElementById('ticketScreen').classList.add('hidden');
         document.getElementById('leaderboardModal').classList.remove('active');
+        
+        // Show Combo HUD
+        document.getElementById('combo-hud').classList.remove('hidden');
+        
         gtag('event', 'game_restart');
         GoogleSheetAPI.incrementPlayCount();
         this.reset(); this.running = true; if(this.balls.length > 0) { this.balls[0].active = true; this.balls[0].dy = -this.balls[0].speed; this.balls[0].dx = (Math.random() - 0.5) * 6; } 
         
-        // CRITICAL FIX: 增加生成磚塊的安全鎖，防止寬度為0時生成失敗
         this.spawnBrickRowSafe();
-        
         this.loop();
     }
 
     backToHome() {
         this.running = false;
-        
-        // 修改：離開遊戲介面（回到主畫面）時，停止 BGM
         this.audio.stopBGM();
 
         document.getElementById('instructionScreen').classList.add('hidden');
@@ -727,16 +725,16 @@ class Game {
         document.getElementById('formScreen').classList.add('hidden');
         document.getElementById('ticketScreen').classList.add('hidden');
         document.getElementById('leaderboardModal').classList.remove('active');
+        document.getElementById('combo-hud').classList.add('hidden');
+
         GoogleSheetAPI.fetchLeaderboard(); this.reset(); this.drawStaticBackground();
     }
 
-    // 新增安全生成函數：如果寬度異常，會等待直到抓到正確寬度才生成
     spawnBrickRowSafe() {
-        // 如果寬度異常 (<=0 或 NaN)，延遲 100ms 再試一次，直到成功
         if (this.width <= 0 || isNaN(this.width)) {
             console.warn("Width invalid, retrying spawn...");
             setTimeout(() => {
-                this.resize(); // 再次嘗試校正尺寸
+                this.resize(); 
                 this.spawnBrickRowSafe();
             }, 100);
             return;
@@ -746,7 +744,6 @@ class Game {
 
     spawnBrickRow(count = 1, startY = null) {
         const cols = Math.floor(this.width / 60); 
-        // 防止 cols 為 0 導致無磚塊
         if(cols <= 0) return; 
         
         const offset = (this.width - (cols * 55)) / 2;
@@ -761,23 +758,28 @@ class Game {
     }
     gameOver(reason) {
         if(!this.running) return; this.running = false; this.audio.playGameOver(); 
-        this.audio.stopBGM(); // Add this line to stop BGM on game over
+        this.audio.stopBGM(); 
         document.getElementById('finalScore').innerText = this.score; gtag('event', 'level_end', { 'score': this.score, 'reason': reason });
         const predRank = GoogleSheetAPI.predictRank(this.score);
         document.getElementById('rankPrediction').innerText = `預測排名: 第 ${predRank} 名`;
         document.getElementById('formScreen').classList.remove('hidden');
+        document.getElementById('combo-hud').classList.add('hidden'); // Hide combo on game over
         const btn = document.getElementById('submitBtn'); btn.innerText = "確認送出"; btn.disabled = false;
     }
     update() {
         this.bgParticles.forEach(p => { p.y += p.speed; if(p.y > this.height) { p.y = -5; p.x = Math.random() * this.width; } });
         const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-        const speedStep = Math.floor(this.score / 10000); const speedMult = isTouch ? 0.5 : 1.0; 
-        const currentBallSpeed = this.baseBallSpeed + (speedStep * speedMult); this.balls.forEach(ball => ball.speed = currentBallSpeed);
+        
+        // 難度調整：球速每100,000分提升
+        const speedStep = Math.floor(this.score / 100000); 
+        const speedMult = isTouch ? 0.5 : 1.0; 
+        const currentBallSpeed = this.baseBallSpeed + (speedStep * speedMult); 
+        this.balls.forEach(ball => ball.speed = currentBallSpeed);
+        
         this.brickSpeed = (isTouch ? 1.2 : 1.0) + Math.min(1.4, this.score / 20000); 
         if(Date.now() - this.lastBrickSpawnTime > 4000 - (this.difficultyLevel * 150)) { this.spawnBrickRow(4); this.lastBrickSpawnTime = Date.now(); if(this.difficultyLevel < 20) this.difficultyLevel++; }
         if(this.spenMode) { const now = Date.now(); if(now - this.lastShotTime > 200) { this.shootBullet(); this.lastShotTime = now; } }
         
-        // Handle Gingerbread Full Width Mode logic in update
         if (this.gingerbreadMode) {
             this.paddle.x = 0;
             this.paddle.w = this.width;
@@ -789,10 +791,9 @@ class Game {
                 b.y += this.brickSpeed * (this.aiMode ? 0.5 : 1); 
                 if(b.y + b.h > this.paddle.y - 150) danger = true; 
                 
-                // Gingerbread Crush Logic
                 if (this.gingerbreadMode && b.y + b.h >= this.paddle.y) {
                     this.destroyBrick(b);
-                    return; // brick destroyed, skip bottom check
+                    return; 
                 }
 
                 if(b.y > this.height) b.status = 0; 
@@ -800,11 +801,26 @@ class Game {
         });
         if(danger) this.dangerOverlay.classList.add('danger-pulse'); else this.dangerOverlay.classList.remove('danger-pulse');
         
-        // Update balls
+        // Check for ball loss (Combo Reset)
+        const initialBallCount = this.balls.length;
+        this.balls = this.balls.filter(b => b.y <= this.height);
+        if (this.balls.length < initialBallCount) {
+            // Ball lost -> Reset Combo
+            this.combo = 0;
+            const comboEl = document.getElementById('comboVal');
+            if(comboEl) {
+                 comboEl.innerText = 0;
+                 comboEl.parentElement.classList.remove('combo-pulse');
+            }
+        }
+
+        if (this.balls.length === 0 && this.running) { 
+             this.gameOver("SIGNAL LOST"); 
+        }
+
         this.balls.forEach((ball, index) => {
             if (!ball.active) return; 
             
-            // Fix: Prevent vertical locking
             if (Math.abs(ball.dx) < 1.5) {
                  ball.dx = (ball.dx >= 0 ? 1 : -1) * 2.0;
             }
@@ -814,7 +830,6 @@ class Game {
             ball.y += ball.dy * (this.aiMode ? 0.6 : 1);
             const maxSpeed = 14; if(ball.dy > maxSpeed) ball.dy = maxSpeed; if(ball.dy < -maxSpeed) ball.dy = -maxSpeed;
             
-            // Wall collision with push-back
             if(ball.x + ball.r > this.width) { 
                 ball.x = this.width - ball.r; 
                 ball.dx *= -1; 
@@ -827,15 +842,34 @@ class Game {
 
             if(ball.y - ball.r < 0) { ball.y = ball.r; ball.dy = Math.abs(ball.dy); this.audio.playHit(); }
             
-            // Collision Logic
+            // Optimized Collision Logic
             let hit = false;
-            if(ball.dy > 0 && ball.x > this.paddle.x && ball.x < this.paddle.x + this.paddle.w) { if(ball.y + ball.r >= this.paddle.y && ball.prevY + ball.r <= this.paddle.y + Math.abs(ball.dy) + 10) hit = true; }
-            if(!hit && ball.dy > 0) { if (ball.x + ball.r > this.paddle.x && ball.x - this.paddle.x + this.paddle.w && ball.y + ball.r > this.paddle.y && ball.y - ball.r < this.paddle.y + this.paddle.h) hit = true; }
+            
+            // 1. Top Collision (Standard Bounce)
+            // Check if ball center is within horizontal range of paddle
+            if(ball.dy > 0 && ball.x >= this.paddle.x && ball.x <= this.paddle.x + this.paddle.w) {
+                 // Check vertical overlap
+                 if (ball.y + ball.r >= this.paddle.y && ball.y - ball.r < this.paddle.y + this.paddle.h) {
+                     hit = true;
+                 }
+            }
+            
+            // 2. Corner/Edge Collision (if strict top check failed)
+            if (!hit && ball.dy > 0) {
+                 // Check if the ball's bounding box intersects with paddle's bounding box
+                 // This catches cases where ball center is outside paddle but ball edge hits paddle
+                 if (ball.x + ball.r >= this.paddle.x &&
+                     ball.x - ball.r <= this.paddle.x + this.paddle.w &&
+                     ball.y + ball.r >= this.paddle.y &&
+                     ball.y - ball.r <= this.paddle.y + this.paddle.h) {
+                     hit = true;
+                 }
+            }
+
             if(hit) { 
                 ball.y = this.paddle.y - ball.r - 1; 
                 ball.dy = -Math.abs(ball.speed); 
                 
-                // Improved reflection
                 let hitPoint = ball.x - (this.paddle.x + this.paddle.w/2); 
                 hitPoint = hitPoint / (this.paddle.w / 2);
                 ball.dx = hitPoint * 8 + (Math.random() - 0.5); 
@@ -847,36 +881,68 @@ class Game {
             this.bricks.forEach(b => { if(b.status === 1 && ball.x > b.x && ball.x < b.x+b.w && ball.y > b.y && ball.y < b.y+b.h) { ball.dy *= -1; this.destroyBrick(b); } });
         });
 
-        // Remove dead balls safely using filter
-        this.balls = this.balls.filter(b => b.y <= this.height);
-
-        // Check Game Over immediately after filtering
-        if (this.balls.length === 0 && this.running) { 
-             this.gameOver("SIGNAL LOST"); 
-        }
-
         this.powerUps.forEach((p, i) => { p.y += 3; if(p.y + 15 > this.paddle.y && p.y - 15 < this.paddle.y + this.paddle.h && p.x > this.paddle.x && p.x < this.paddle.x + this.paddle.w) { this.activatePowerUp(p.type); this.powerUps.splice(i, 1); } if(p.y > this.height) this.powerUps.splice(i, 1); });
         this.bullets.forEach((b, i) => { b.y -= 15; this.bricks.forEach(brick => { if(brick.status === 1 && b.x > brick.x && b.x < brick.x + brick.w && b.y > brick.y && b.y < brick.y + brick.h) { this.destroyBrick(brick); this.bullets.splice(i, 1); } }); if(b.y < 0) this.bullets.splice(i, 1); });
         this.particles.forEach((p, i) => { p.x += p.dx; p.y += p.dy; p.life -= 0.05; if(p.life <= 0) this.particles.splice(i, 1); });
         this.bricks = this.bricks.filter(b => b.status === 1);
     }
     destroyBrick(b) {
-        b.status = 0; this.score += 100; this.hudScore.innerText = this.score; this.audio.playBreak(); this.createParticles(b.x + b.w/2, b.y + b.h/2, b.color);
+        b.status = 0; 
         
-        // Power up logic: 0.5% Gingerbread, 20% others
+        // Combo Calculation
+        this.combo++;
+        const bonusMultiplier = 1 + (this.combo * 0.1); // 1.1, 1.2 ...
+        const points = Math.floor(100 * bonusMultiplier);
+        this.score += points;
+        
+        // Update HUD
+        this.hudScore.innerText = this.score; 
+        const comboEl = document.getElementById('comboVal');
+        if(comboEl) {
+            comboEl.innerText = this.combo;
+            // Trigger pulse animation
+            comboEl.parentElement.classList.remove('combo-pulse');
+            void comboEl.parentElement.offsetWidth; // trigger reflow
+            comboEl.parentElement.classList.add('combo-pulse');
+        }
+
+        this.audio.playBreak(); 
+        this.createParticles(b.x + b.w/2, b.y + b.h/2, b.color);
+        
+        // Drop Logic
         const rand = Math.random();
         let type = null;
+        
+        // Difficulty: Drop rate reduction for 'Others'
+        // Every 100,000 score -> Reduce 1% (0.01) chance
+        const diffStep = Math.floor(this.score / 100000);
+        const reduction = diffStep * 0.01;
+        
+        // Base chance for others is ~15% (from 0.01 to 0.16)
+        // New max threshold = 0.16 - reduction
+        let otherThreshold = 0.16 - reduction;
+        if (otherThreshold < 0.01) otherThreshold = 0.01; // Cannot go below nuke threshold
+
+        const isHighScore = this.score >= 1000000;
+
+        // 0.000 - 0.005: Gingerbread (Only if score < 1M)
         if (rand < 0.005) {
-            type = 'gingerbread';
-        } else if (rand < 0.205) {
+            if (!isHighScore) type = 'gingerbread';
+        } 
+        // 0.005 - 0.010: Nuke (Only if score < 1M)
+        else if (rand < 0.01) {
+             if (!isHighScore) type = 'nuke';
+        }
+        // 0.010 - Threshold: Others (Decreasing probability)
+        else if (rand < otherThreshold) {
              const r = Math.random();
-             if (r < 0.05) type = 'nuke';
-             else if (r < 0.20) type = 'multiball';
+             if (r < 0.25) type = 'multiball';
              else {
                  const commonTypes = ['expand', 'spen', 'ai'];
                  type = commonTypes[Math.floor(Math.random() * commonTypes.length)];
              }
         }
+        
         if (type) this.powerUps.push({ x: b.x + b.w/2, y: b.y, type: type });
     }
     activatePowerUp(type) {
@@ -903,7 +969,7 @@ class Game {
             this.paddle.x -= (newW - oldW) / 2; this.paddle.w = newW;
             if(this.paddle.x < 0) this.paddle.x = 0; if(this.paddle.x + this.paddle.w > this.width) this.paddle.x = this.width - this.paddle.w;
             setTimeout(() => { const currentW = this.paddle.w; this.paddle.x += (currentW - 100) / 2; this.paddle.w = 100; this.paddle.state = 'cover'; this.paddle.color = '#00c3ff'; }, 10000);
-        } else if(type === 'spen') { this.spenMode = true; this.modeIndicator.innerText = "S PEN: RAPID FIRE"; this.modeIndicator.className = 'active-spen'; this.modeIndicator.style.opacity = '1'; setTimeout(() => { this.spenMode = false; this.modeIndicator.style.opacity = '0'; }, 5000); } // V10.0 1s text removed, using CSS fade instead
+        } else if(type === 'spen') { this.spenMode = true; this.modeIndicator.innerText = "S PEN: RAPID FIRE"; this.modeIndicator.className = 'active-spen'; this.modeIndicator.style.opacity = '1'; setTimeout(() => { this.spenMode = false; this.modeIndicator.style.opacity = '0'; }, 5000); } 
         else if(type === 'ai') { this.aiMode = true; this.modeIndicator.innerText = "AI ASSIST: SLOW MOTION"; this.modeIndicator.className = 'active-ai'; this.modeIndicator.style.opacity = '1'; setTimeout(() => { this.aiMode = false; this.modeIndicator.style.opacity = '0'; }, 8000); }
         
         setTimeout(() => this.modeIndicator.style.opacity = '0', 1500); 
@@ -931,7 +997,6 @@ class Game {
     }
 
     draw() {
-        // Draw Background Image if loaded, otherwise black
         if(this.bgImage.complete && this.bgImage.naturalWidth > 0) {
             this.ctx.drawImage(this.bgImage, 0, 0, this.width, this.height);
         } else {
@@ -943,7 +1008,6 @@ class Game {
         this.ctx.fillStyle = 'rgba(0, 0, 0, 0.3)'; this.ctx.fillRect(0, 0, this.width, this.height);
         this.ctx.strokeStyle = 'rgba(0, 195, 255, 0.3)'; this.ctx.beginPath(); this.ctx.setLineDash([5, 15]); this.ctx.moveTo(0, this.paddle.y - 10); this.ctx.lineTo(this.width, this.paddle.y - 10); this.ctx.stroke(); this.ctx.setLineDash([]);
         
-        // Use Canvas Drawing for Paddle
         this.drawPaddle(this.paddle.x, this.paddle.y, this.paddle.w, this.paddle.h, this.paddle.state, this.paddle.color);
 
         this.balls.forEach(ball => { if(ball.active) { this.ctx.beginPath(); this.ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI*2); this.ctx.fillStyle = '#fff'; this.ctx.fill(); this.ctx.shadowBlur = 10; this.ctx.shadowColor = '#fff'; this.ctx.fill(); this.ctx.shadowBlur = 0; } });
