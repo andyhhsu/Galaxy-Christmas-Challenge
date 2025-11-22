@@ -21,19 +21,35 @@
         #danger-overlay { position: absolute; bottom: 0; left: 0; width: 100%; height: 20%; background: linear-gradient(to top, rgba(255, 0, 50, 0.3), transparent); pointer-events: none; opacity: 0; transition: opacity 0.3s; z-index: 5; }
         .danger-pulse { animation: pulseRed 1s infinite alternate; }
         @keyframes pulseRed { from { opacity: 0.1; } to { opacity: 0.4; } }
-        #flash-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: white; opacity: 0; pointer-events: none; z-index: 40; transition: opacity 0.1s; }
+        
+        /* Modified Flash Overlay for Explosion */
+        #flash-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; pointer-events: none; z-index: 40; transition: opacity 0.1s; mix-blend-mode: screen; }
+        
+        /* Shake Animation for Nuke */
+        @keyframes shake {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            10% { transform: translate(-5px, -5px) rotate(-1deg); }
+            20% { transform: translate(5px, 5px) rotate(1deg); }
+            30% { transform: translate(-5px, 5px) rotate(0deg); }
+            40% { transform: translate(5px, -5px) rotate(1deg); }
+            50% { transform: translate(-5px, 0) rotate(-1deg); }
+            60% { transform: translate(5px, 0) rotate(0deg); }
+            100% { transform: translate(0, 0) rotate(0deg); }
+        }
+        .shake-effect { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
+
         .ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(12px); z-index: 50; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); opacity: 1; visibility: visible; padding: 20px; }
         .ui-layer.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
         .modal-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.95); z-index: 60; display: flex; flex-direction: column; align-items: center; padding-top: 60px; transition: transform 0.4s cubic-bezier(0.19, 1, 0.22, 1); transform: translateY(100%); }
         .modal-layer.active { transform: translateY(0); }
         #hud { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); padding: 8px 20px; display: flex; flex-direction: column; align-items: center; pointer-events: none; z-index: 10; background: rgba(0,0,0,0.5); border-radius: 20px; border: 1px solid rgba(0, 195, 255, 0.3); backdrop-filter: blur(4px); }
         
-        /* New Combo HUD Styles */
-        #combo-hud { position: absolute; top: 20px; left: 20px; pointer-events: none; z-index: 10; display: flex; flex-direction: column; align-items: flex-start; }
-        .combo-label { font-size: 10px; color: #ffd700; letter-spacing: 2px; font-family: 'Orbitron'; opacity: 0.8; font-weight: bold; margin-bottom: -5px; }
+        /* Combo HUD */
+        #combo-hud { position: absolute; top: 20px; left: 20px; pointer-events: none; z-index: 15; display: flex; flex-direction: column; align-items: flex-start; transition: opacity 0.3s; }
+        .combo-label { font-size: 10px; color: #ffd700; letter-spacing: 2px; font-family: 'Orbitron'; opacity: 0.8; font-weight: bold; margin-bottom: -5px; text-shadow: 0 0 5px rgba(0,0,0,0.5); }
         .combo-value { font-family: 'Orbitron', sans-serif; font-size: 36px; color: #ffd700; font-weight: 900; text-shadow: 0 0 15px rgba(255, 215, 0, 0.6); line-height: 1; transition: transform 0.1s; font-style: italic; }
         .combo-pulse .combo-value { animation: comboPop 0.15s ease-out; color: #fff; }
-        @keyframes comboPop { 0% { transform: scale(1); } 50% { transform: scale(1.3); } 100% { transform: scale(1); } }
+        @keyframes comboPop { 0% { transform: scale(1); } 50% { transform: scale(1.4); } 100% { transform: scale(1); } }
 
         .hud-label { font-size: 10px; color: #00c3ff; letter-spacing: 2px; font-family: 'Orbitron'; opacity: 0.9; }
         .hud-value { font-family: 'Orbitron', sans-serif; font-size: 24px; color: white; font-weight: bold; text-shadow: 0 0 10px rgba(0, 195, 255, 0.5); line-height: 1; }
@@ -131,7 +147,7 @@
         <div id="danger-overlay"></div>
         <div id="flash-overlay"></div>
 
-        <!-- Combo Display -->
+        <!-- Combo Display (Hidden by default) -->
         <div id="combo-hud" class="hidden">
             <div class="combo-label">COMBO</div>
             <div class="combo-value" id="comboVal">0</div>
@@ -190,7 +206,7 @@
                 <div class="inst-title">HOW TO PLAY</div>
                 <ul class="inst-list">
                     <li>滑動擋板，接住能量球。</li>
-                    <li>連續擊碎磚塊可累積 <span class="text-[#ffd700] font-bold">COMBO</span> 加分。</li>
+                    <li>連續擊碎累積 <span class="text-[#ffd700] font-bold">COMBO</span> 分數加倍。</li>
                     <li>接住道具觸發 Galaxy 特效：</li>
                 </ul>
                 <div class="inst-icons">
@@ -308,7 +324,7 @@
 <script>
 // --- Google Sheets API Manager ---
 const GoogleSheetAPI = {
-    scriptID: "AKfycbxdYUWV5J9symUn7xpbNdFbwm8zjJKz0YKA8nkYmewTpc_HT0kUcLLLrGmYCMNIWHpt",
+    scriptID: "AKfycbwA30iPuUpW8CLPYZKAraxLQVeCAUbZM4W9cElFFXYTIW9FfklaQtaPdZOKwgjeQ6Hu",
     
     get scriptURL() { return `https://script.google.com/macros/s/${this.scriptID}/exec`; },
 
@@ -323,31 +339,35 @@ const GoogleSheetAPI = {
     },
 
     updatePlayCount: function() {
-        // FIX 1: 加上時間戳記 t=Date.now() 強制避開快取，解決歸零後顯示舊資料問題
         const el = document.getElementById('globalPlayCount');
         if(el) el.innerText = "...";
 
+        // FIX: 增加 t=Date.now() 防止快取，且強制 API 資料優先於 localStorage
         fetch(this.scriptURL + "?action=get_play_count&t=" + Date.now())
             .then(res => res.json())
             .then(data => {
                 if (typeof data.count === 'number') {
                     this.globalPlayCount = data.count;
                     if(el) el.innerText = this.globalPlayCount.toLocaleString();
+                    // 強制更新 localStorage，解決舊資料卡住問題
                     localStorage.setItem('playCount', this.globalPlayCount);
                 }
             })
             .catch(e => {
-                console.error(e);
-                // Fallback only if API completely fails
+                console.error("Fetch failed, falling back to local", e);
+                // 只有在 API 失敗時才讀取 LocalStorage
                 const stored = localStorage.getItem('playCount');
                 if (stored && el) el.innerText = parseInt(stored).toLocaleString();
             });
     },
 
     incrementPlayCount: function() {
+        // 樂觀更新 (Optimistic Update) - 本地先+1，讓使用者感覺很快
         this.globalPlayCount++;
-        localStorage.setItem('playCount', this.globalPlayCount);
-        document.getElementById('globalPlayCount').innerText = this.globalPlayCount.toLocaleString();
+        // 不要立即更新畫面，讓 user 玩完回到首頁時再看到更新的總數 (因為首頁才會顯示總數)
+        // localStorage.setItem('playCount', this.globalPlayCount); 
+        
+        // Fire and forget to backend
         fetch(this.scriptURL + "?action=increment_play_count").catch(console.error);
     },
 
@@ -670,9 +690,14 @@ class Game {
     
     reset() {
         this.running = false; this.score = 0; if(this.hudScore) this.hudScore.innerText = "0";
+        
+        // Reset Combo
         this.combo = 0; 
         const comboVal = document.getElementById('comboVal');
-        if(comboVal) comboVal.innerText = "0";
+        if(comboVal) {
+            comboVal.innerText = "0";
+            comboVal.parentElement.classList.remove('combo-pulse');
+        }
         
         this.difficultyLevel = 1; this.lastBrickSpawnTime = 0; this.lastShotTime = 0;
         const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
@@ -688,7 +713,7 @@ class Game {
     showInstructions() { 
         document.getElementById('startScreen').classList.add('hidden'); 
         document.getElementById('instructionScreen').classList.remove('hidden'); 
-        GoogleSheetAPI.incrementPlayCount(); 
+        // Remove increment here, move to real start
         this.audio.enable();
     } 
     startRealGame() { this.restartGame(); }
@@ -706,10 +731,14 @@ class Game {
         document.getElementById('leaderboardModal').classList.remove('active');
         
         // Show Combo HUD
-        document.getElementById('combo-hud').classList.remove('hidden');
+        const comboHud = document.getElementById('combo-hud');
+        comboHud.classList.remove('hidden');
+        comboHud.style.opacity = '1';
         
         gtag('event', 'game_restart');
+        // 統一在這裡計算遊玩次數 (按下開始/重玩時)
         GoogleSheetAPI.incrementPlayCount();
+        
         this.reset(); this.running = true; if(this.balls.length > 0) { this.balls[0].active = true; this.balls[0].dy = -this.balls[0].speed; this.balls[0].dx = (Math.random() - 0.5) * 6; } 
         
         this.spawnBrickRowSafe();
@@ -725,9 +754,17 @@ class Game {
         document.getElementById('formScreen').classList.add('hidden');
         document.getElementById('ticketScreen').classList.add('hidden');
         document.getElementById('leaderboardModal').classList.remove('active');
+        
+        // Hide Combo HUD
         document.getElementById('combo-hud').classList.add('hidden');
 
-        GoogleSheetAPI.fetchLeaderboard(); this.reset(); this.drawStaticBackground();
+        // 回到首頁時，抓取最新的總數
+        GoogleSheetAPI.fetchLeaderboard(); 
+        // 這裡不需要呼叫 reset，因為 reset 會在 restartGame 時呼叫
+        this.reset(); 
+        this.drawStaticBackground();
+        // 重新抓取一次總數確保更新
+        GoogleSheetAPI.updatePlayCount();
     }
 
     spawnBrickRowSafe() {
@@ -763,14 +800,16 @@ class Game {
         const predRank = GoogleSheetAPI.predictRank(this.score);
         document.getElementById('rankPrediction').innerText = `預測排名: 第 ${predRank} 名`;
         document.getElementById('formScreen').classList.remove('hidden');
+        
         document.getElementById('combo-hud').classList.add('hidden'); // Hide combo on game over
+        
         const btn = document.getElementById('submitBtn'); btn.innerText = "確認送出"; btn.disabled = false;
     }
     update() {
         this.bgParticles.forEach(p => { p.y += p.speed; if(p.y > this.height) { p.y = -5; p.x = Math.random() * this.width; } });
         const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
         
-        // 難度調整：球速每100,000分提升
+        // 動態難度：每 100,000 分提升球速
         const speedStep = Math.floor(this.score / 100000); 
         const speedMult = isTouch ? 0.5 : 1.0; 
         const currentBallSpeed = this.baseBallSpeed + (speedStep * speedMult); 
@@ -804,8 +843,9 @@ class Game {
         // Check for ball loss (Combo Reset)
         const initialBallCount = this.balls.length;
         this.balls = this.balls.filter(b => b.y <= this.height);
+        
+        // 如果球掉落了（數量減少），且並非全部掉落導致遊戲結束，則重置 Combo
         if (this.balls.length < initialBallCount) {
-            // Ball lost -> Reset Combo
             this.combo = 0;
             const comboEl = document.getElementById('comboVal');
             if(comboEl) {
@@ -842,22 +882,17 @@ class Game {
 
             if(ball.y - ball.r < 0) { ball.y = ball.r; ball.dy = Math.abs(ball.dy); this.audio.playHit(); }
             
-            // Optimized Collision Logic
             let hit = false;
             
-            // 1. Top Collision (Standard Bounce)
-            // Check if ball center is within horizontal range of paddle
+            // Top Collision
             if(ball.dy > 0 && ball.x >= this.paddle.x && ball.x <= this.paddle.x + this.paddle.w) {
-                 // Check vertical overlap
                  if (ball.y + ball.r >= this.paddle.y && ball.y - ball.r < this.paddle.y + this.paddle.h) {
                      hit = true;
                  }
             }
             
-            // 2. Corner/Edge Collision (if strict top check failed)
+            // Corner/Edge Collision
             if (!hit && ball.dy > 0) {
-                 // Check if the ball's bounding box intersects with paddle's bounding box
-                 // This catches cases where ball center is outside paddle but ball edge hits paddle
                  if (ball.x + ball.r >= this.paddle.x &&
                      ball.x - ball.r <= this.paddle.x + this.paddle.w &&
                      ball.y + ball.r >= this.paddle.y &&
@@ -913,27 +948,26 @@ class Game {
         const rand = Math.random();
         let type = null;
         
-        // Difficulty: Drop rate reduction for 'Others'
-        // Every 100,000 score -> Reduce 1% (0.01) chance
+        // 難度調整：每 100,000 分降低 1% 機率
         const diffStep = Math.floor(this.score / 100000);
         const reduction = diffStep * 0.01;
         
-        // Base chance for others is ~15% (from 0.01 to 0.16)
-        // New max threshold = 0.16 - reduction
+        // 基礎機率約 15% (0.01 to 0.16)，最低降至 1%
         let otherThreshold = 0.16 - reduction;
-        if (otherThreshold < 0.01) otherThreshold = 0.01; // Cannot go below nuke threshold
+        if (otherThreshold < 0.02) otherThreshold = 0.02; 
 
+        // 百萬分門檻檢查
         const isHighScore = this.score >= 1000000;
 
-        // 0.000 - 0.005: Gingerbread (Only if score < 1M)
+        // 0.000 - 0.005: Gingerbread (若高於 1M 分則不掉落)
         if (rand < 0.005) {
             if (!isHighScore) type = 'gingerbread';
         } 
-        // 0.005 - 0.010: Nuke (Only if score < 1M)
+        // 0.005 - 0.010: Nuke (若高於 1M 分則不掉落)
         else if (rand < 0.01) {
              if (!isHighScore) type = 'nuke';
         }
-        // 0.010 - Threshold: Others (Decreasing probability)
+        // 0.010 - Threshold: 其他道具 (機率遞減)
         else if (rand < otherThreshold) {
              const r = Math.random();
              if (r < 0.25) type = 'multiball';
@@ -958,7 +992,23 @@ class Game {
              }, 3000);
         }
         else if (type === 'nuke') { 
-            this.audio.playNuke(); this.flashOverlay.style.opacity = '1'; setTimeout(function() { self.flashOverlay.style.opacity = '0'; }, 500); 
+            this.audio.playNuke(); 
+            
+            // Change Background Overlay to Red/Gold Gradient instead of White
+            const overlay = document.getElementById('flash-overlay');
+            overlay.style.background = 'radial-gradient(circle, rgba(255, 215, 0, 0.8) 0%, rgba(255, 69, 0, 0.4) 50%, transparent 100%)';
+            overlay.style.opacity = '1'; 
+            
+            // Trigger Screen Shake
+            const wrapper = document.getElementById('game-wrapper');
+            wrapper.classList.add('shake-effect');
+            
+            setTimeout(function() { 
+                overlay.style.opacity = '0';
+                wrapper.classList.remove('shake-effect');
+                // Reset background for next use if necessary (optional)
+            }, 500); 
+            
             this.bricks.forEach(function(b) { if(b.status === 1) { b.status = 0; self.score += 50; self.createParticles(b.x + b.w/2, b.y + b.h/2, '#fff'); } }); 
             this.hudScore.innerText = this.score; 
         }
