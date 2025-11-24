@@ -22,10 +22,8 @@
         .danger-pulse { animation: pulseRed 1s infinite alternate; }
         @keyframes pulseRed { from { opacity: 0.1; } to { opacity: 0.4; } }
         
-        /* Modified Flash Overlay for Explosion */
         #flash-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; pointer-events: none; z-index: 40; transition: opacity 0.1s; mix-blend-mode: screen; }
         
-        /* Shake Animation for Nuke */
         @keyframes shake {
             0% { transform: translate(0, 0) rotate(0deg); }
             10% { transform: translate(-5px, -5px) rotate(-1deg); }
@@ -50,6 +48,11 @@
         .combo-value { font-family: 'Orbitron', sans-serif; font-size: 36px; color: #ffd700; font-weight: 900; text-shadow: 0 0 15px rgba(255, 215, 0, 0.6); line-height: 1; transition: transform 0.1s; font-style: italic; }
         .combo-pulse .combo-value { animation: comboPop 0.15s ease-out; color: #fff; }
         @keyframes comboPop { 0% { transform: scale(1); } 50% { transform: scale(1.4); } 100% { transform: scale(1); } }
+        
+        /* Level HUD */
+        #level-hud { position: absolute; top: 20px; right: 70px; pointer-events: none; z-index: 15; text-align: right; }
+        .level-label { font-size: 10px; color: #aaa; letter-spacing: 1px; font-family: 'Orbitron'; }
+        .level-value { font-family: 'Orbitron', sans-serif; font-size: 18px; color: #fff; font-weight: bold; }
 
         .hud-label { font-size: 10px; color: #00c3ff; letter-spacing: 2px; font-family: 'Orbitron'; opacity: 0.9; }
         .hud-value { font-family: 'Orbitron', sans-serif; font-size: 24px; color: white; font-weight: bold; text-shadow: 0 0 10px rgba(0, 195, 255, 0.5); line-height: 1; }
@@ -127,6 +130,11 @@
         .music-toggle { position: absolute; top: 20px; right: 20px; z-index: 100; background: rgba(0,0,0,0.6); border: 1px solid #333; color: #00c3ff; width: 40px; height: 40px; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: all 0.3s; }
         .music-toggle:hover { background: rgba(0, 195, 255, 0.2); border-color: #00c3ff; }
         .music-toggle.muted { color: #555; border-color: #555; }
+        
+        /* Store List Modal specific styles */
+        .store-list-item { padding: 12px; border-bottom: 1px solid #222; color: #ccc; font-size: 14px; }
+        .store-list-item:last-child { border-bottom: none; }
+        .store-region { color: #00c3ff; font-weight: bold; margin-bottom: 4px; font-family: 'Orbitron'; font-size: 12px; }
     </style>
 </head>
 <body onclick="game.unlockAudio()"> 
@@ -151,6 +159,12 @@
         <div id="combo-hud" class="hidden">
             <div class="combo-label">COMBO</div>
             <div class="combo-value" id="comboVal">0</div>
+        </div>
+        
+        <!-- Level HUD (Hidden by default) -->
+        <div id="level-hud" class="hidden">
+            <div class="level-label">LEVEL</div>
+            <div class="level-value" id="levelVal">1</div>
         </div>
 
         <!-- HUD -->
@@ -239,8 +253,10 @@
                 <img src="https://raw.githubusercontent.com/andyhhsu/Galaxy-Christmas-Challenge/main/reward4.png" alt="Rewards List" class="prize-img">
             </div>
             
-            <div class="mb-4 text-[12px] text-[#00c3ff] text-center font-bold tracking-wide">
-                憑成績登錄截圖，可至指定三星智慧館兌換「神秘小禮」
+            <!-- 修改後的說明頁面文字 (斷行與強調，增加互動連結) -->
+            <div class="mb-4 text-[12px] text-[#00c3ff] text-center font-bold tracking-wide leading-relaxed">
+                憑成績登錄截圖，可至<span class="underline cursor-pointer" onclick="game.openStoreModal()">指定三星智慧館</span><br>
+                兌換<span class="text-[#ffd700] text-base font-black">「神秘小禮」</span>
             </div>
 
             <button class="btn-primary max-w-xs mt-2" onclick="game.startRealGame()">開始遊戲</button>
@@ -265,8 +281,9 @@
                 <div class="flex items-center justify-center gap-3 mb-6 bg-[#111] p-3 rounded border border-[#222]">
                     <span class="text-xl">⚡</span>
                     <div>
-                        <div class="text-sm text-white font-bold">登錄即可抽 10,000mAh 行動電源</div>
-                        <div class="text-[10px] text-gray-500">(2026/1/2抽出)</div>
+                        <!-- 修改後的文字，分兩行 -->
+                        <div class="text-sm text-white font-bold">登錄即可抽10,000mAh行動電源</div>
+                        <div class="text-[10px] text-gray-500 mt-1 leading-tight">(2026/1/2於三星微風南山<br>旗艦體驗館臉書公佈)</div>
                     </div>
                 </div>
 
@@ -276,7 +293,7 @@
             </div>
         </div>
 
-        <!-- 3. Flagship Ticket Screen -->
+        <!-- 3. Flagship Ticket Screen (Reverted to Success/Gift version) -->
         <div id="ticketScreen" class="ui-layer hidden">
             
             <div class="text-center mb-6">
@@ -297,8 +314,11 @@
                     </div>
                 </div>
             </div>
-            <!-- 新增兌換提醒文字 -->
-            <div class="redeem-text">憑此頁面截圖，可至指定三星智慧館兌換「神秘小禮」</div>
+            <!-- Reverted Redeem Text with Store Modal Link -->
+            <div class="redeem-text" style="color: #ffd700; font-size: 14px; font-weight: bold; text-align: center; margin-bottom: 20px; text-shadow: 0 0 10px rgba(255, 215, 0, 0.5); animation: pulseText 2s infinite; font-family: 'Noto Sans TC'; letter-spacing: 1px; line-height: 1.6;">
+                憑此頁面截圖，可至<span class="underline cursor-pointer text-white" onclick="game.openStoreModal()">指定三星智慧館</span><br>
+                兌換「神秘小禮」
+            </div>
 
             <div class="w-full max-w-xs flex flex-col gap-3">
                 <button class="btn-secondary border-[#00c3ff] text-[#00c3ff]" onclick="api.openFullLeaderboard()">查看排名</button>
@@ -317,6 +337,28 @@
             </div>
             
             <button class="btn-secondary max-w-xs mt-4" onclick="api.closeFullLeaderboard()">關閉</button>
+        </div>
+
+        <!-- 5. Store List Modal (NEW) -->
+        <div id="storeModal" class="modal-layer">
+            <h2 class="text-2xl font-bold text-white mb-4" style="font-family: 'Noto Sans TC'">指定三星智慧館</h2>
+            
+            <div class="lb-container-mini" style="text-align:left; padding:0;">
+                <div class="store-list-item">
+                    <div class="store-region">北區</div>
+                    <div>微風南山</div>
+                </div>
+                <div class="store-list-item">
+                    <div class="store-region">中區</div>
+                    <div>台中逢甲、文心秀泰</div>
+                </div>
+                <div class="store-list-item">
+                    <div class="store-region">南區</div>
+                    <div>台南南紡、高雄瑞豐</div>
+                </div>
+            </div>
+            
+            <button class="btn-secondary max-w-xs mt-6" onclick="game.closeStoreModal()">關閉</button>
         </div>
     </div>
 </div>
@@ -362,11 +404,8 @@ const GoogleSheetAPI = {
     },
 
     incrementPlayCount: function() {
-        // 樂觀更新 (Optimistic Update) - 本地先+1，讓使用者感覺很快
+        // 樂觀更新 (Optimistic Update)
         this.globalPlayCount++;
-        // 不要立即更新畫面，讓 user 玩完回到首頁時再看到更新的總數 (因為首頁才會顯示總數)
-        // localStorage.setItem('playCount', this.globalPlayCount); 
-        
         // Fire and forget to backend
         fetch(this.scriptURL + "?action=increment_play_count").catch(console.error);
     },
@@ -402,7 +441,8 @@ const GoogleSheetAPI = {
             row.className = `lb-row`;
             let rankClass = index === 0 ? "rank-1" : (index === 1 ? "rank-2" : "rank-3");
             let rankText = index === 0 ? "1ST" : (index === 1 ? "2ND" : "3RD");
-            row.innerHTML = `<div class="flex items-center gap-3 w-full"><span class="text-sm w-8 text-center ${rankClass}" style="font-family:'Orbitron'">${rankText}</span><span class="flex-1 text-left truncate font-bold text-white">${item.name}</span><span class="font-mono text-[#00c3ff]">${item.score}</span></div>`;
+            // Added toLocaleString() for commas
+            row.innerHTML = `<div class="flex items-center gap-3 w-full"><span class="text-sm w-8 text-center ${rankClass}" style="font-family:'Orbitron'">${rankText}</span><span class="flex-1 text-left truncate font-bold text-white">${item.name}</span><span class="font-mono text-[#00c3ff]">${item.score.toLocaleString()}</span></div>`;
             listEl.appendChild(row);
         });
     },
@@ -416,7 +456,8 @@ const GoogleSheetAPI = {
             row.className = `lb-row`;
             if (highlightName && item.name === highlightName && item.score == highlightScore) { row.classList.add('highlight'); }
             let rankColor = rank === 1 ? "rank-1" : (rank === 2 ? "rank-2" : (rank === 3 ? "rank-3" : ""));
-            row.innerHTML = `<span class="w-10 font-bold ${rankColor}" style="font-family:'Orbitron'">#${rank}</span><span class="flex-1 text-left truncate px-2 text-gray-300">${item.name}</span><span class="w-20 text-right font-mono text-[#00c3ff]">${item.score}</span>`;
+            // Added toLocaleString() for commas
+            row.innerHTML = `<span class="w-10 font-bold ${rankColor}" style="font-family:'Orbitron'">#${rank}</span><span class="flex-1 text-left truncate px-2 text-gray-300">${item.name}</span><span class="w-20 text-right font-mono text-[#00c3ff]">${item.score.toLocaleString()}</span>`;
             listEl.appendChild(row);
         });
     },
@@ -431,16 +472,20 @@ const GoogleSheetAPI = {
 
         if(!name || !phone) { alert('請輸入姓名與電話以便兌換獎品'); return; }
         const btn = document.getElementById('submitBtn'); btn.innerText = "UPLOADING..."; btn.disabled = true;
-        document.getElementById('ticketName').innerText = name; document.getElementById('ticketScore').innerText = score;
+        document.getElementById('ticketName').innerText = name; document.getElementById('ticketScore').innerText = score.toLocaleString(); // Add comma here too
 
         const formData = new FormData();
         formData.append('name', name); formData.append('phone', phone); formData.append('score', score); formData.append('action', 'add');
         gtag('event', 'generate_lead', { 'event_category': 'game', 'event_label': 'score_submit', 'value': score });
         fetch(this.scriptURL, { method: 'POST', body: formData }).then(res => res.json()).then(() => { this.fetchLeaderboard(); }).catch(console.error);
+        
         setTimeout(() => {
             document.getElementById('formScreen').classList.add('hidden');
             document.getElementById('ticketScreen').classList.remove('hidden');
-            this.leaderboardData.push({name: name, score: score}); this.leaderboardData.sort((a, b) => b.score - a.score);
+            
+            // Reverted: No discount logic
+            this.leaderboardData.push({name: name, score: score}); 
+            this.leaderboardData.sort((a, b) => b.score - a.score);
         }, 800); 
     }
 };
@@ -551,6 +596,7 @@ class SoundManager {
     playPowerUp() { this.playTone(400, 'sine', 0.3, 800); setTimeout(() => this.playTone(600, 'sine', 0.3, 1200), 100); }
     playBreak() { this.playTone(100, 'sawtooth', 0.1); }
     playNuke() { this.playTone(100, 'sawtooth', 1.0, 50); }
+    playLevelUp() { this.playTone(600, 'sine', 0.1, 1200); setTimeout(() => this.playTone(800, 'sine', 0.3, 1600), 100); }
     playGameOver() { this.playTone(300, 'sawtooth', 1.5, 50); }
 }
 
@@ -571,7 +617,6 @@ class Game {
         this.dangerOverlay = document.getElementById('danger-overlay');
         this.flashOverlay = document.getElementById('flash-overlay');
         this.particles = []; this.initParticles();
-        this.baseBallSpeed = 5.0;
         
         this.bgImage = new Image();
         this.bgImage.src = 'https://raw.githubusercontent.com/andyhhsu/Galaxy-Christmas-Challenge/main/background.png';
@@ -580,7 +625,15 @@ class Game {
         this.cookieImage.src = 'https://raw.githubusercontent.com/andyhhsu/Galaxy-Christmas-Challenge/main/cookie.png';
 
         this.reset(); this.bindEvents();
-        window.addEventListener('resize', () => { this.resize(); this.initParticles(); if(!this.running) this.drawStaticBackground(); });
+        
+        // Explicitly bind drawStaticBackground to ensure context
+        this.drawStaticBackground = this.drawStaticBackground.bind(this);
+
+        window.addEventListener('resize', () => { 
+            this.resize(); 
+            this.initParticles(); 
+            if(!this.running) this.drawStaticBackground(); 
+        });
         
         this.bgImage.onload = () => { if(!this.running) this.drawStaticBackground(); };
         
@@ -589,6 +642,25 @@ class Game {
         this.idleTime = null; this.resetIdleTimer = this.resetIdleTimer.bind(this);
         ['mousemove', 'mousedown', 'keypress', 'touchmove', 'touchstart', 'click'].forEach(evt => window.addEventListener(evt, this.resetIdleTimer));
         this.resetIdleTimer();
+    }
+    
+    // Moved drawStaticBackground here to be explicitly visible early in class
+    drawStaticBackground() { 
+        if(this.bgImage.complete && this.bgImage.naturalWidth > 0) {
+             this.ctx.drawImage(this.bgImage, 0, 0, this.width, this.height);
+        } else {
+             this.ctx.fillStyle = '#000'; 
+             this.ctx.fillRect(0, 0, this.width, this.height);
+        }
+        
+        this.ctx.fillStyle = 'rgba(0, 195, 255, 0.5)'; 
+        if(this.bgParticles) { 
+            this.bgParticles.forEach(p => { 
+                this.ctx.globalAlpha = p.alpha; 
+                this.ctx.fillRect(p.x, p.y, p.size, p.size); 
+                this.ctx.globalAlpha = 1; 
+            }); 
+        } 
     }
     
     unlockAudio() {
@@ -691,6 +763,11 @@ class Game {
     reset() {
         this.running = false; this.score = 0; if(this.hudScore) this.hudScore.innerText = "0";
         
+        // Reset Level
+        this.level = 1;
+        this.lastLevelUpScore = 0;
+        document.getElementById('levelVal').innerText = "1";
+
         // Reset Combo
         this.combo = 0; 
         const comboVal = document.getElementById('comboVal');
@@ -700,20 +777,24 @@ class Game {
         }
         
         this.difficultyLevel = 1; this.lastBrickSpawnTime = 0; this.lastShotTime = 0;
+        
+        // Initial Speeds
         const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-        this.brickSpeed = isTouch ? 1.2 : 1.0; this.baseBallSpeed = isTouch ? 2.5 : 5.0;
+        this.baseBrickSpeed = isTouch ? 0.8 : 0.5; // Start slower
+        this.brickSpeed = this.baseBrickSpeed;
         
         const paddleY = this.height - 120;
         this.paddle = { w: 100, h: 24, x: this.width/2 - 50, y: paddleY, color: '#00c3ff', state: 'cover' };
         
-        this.balls = []; this.balls.push({ x: this.width/2, y: paddleY - 20, r: 8, dx: 0, dy: 0, speed: this.baseBallSpeed, active: false, prevY: paddleY - 20 });
+        // Initial Ball Speed based on level 1
+        const initialBallSpeed = isTouch ? 2.5 : 4.0;
+        this.balls = []; this.balls.push({ x: this.width/2, y: paddleY - 20, r: 8, dx: 0, dy: 0, speed: initialBallSpeed, active: false, prevY: paddleY - 20 });
         this.bricks = []; this.particles = []; this.powerUps = []; this.bullets = [];
         this.aiMode = false; this.spenMode = false; this.gingerbreadMode = false; this.dangerOverlay.classList.remove('danger-pulse');
     }
     showInstructions() { 
         document.getElementById('startScreen').classList.add('hidden'); 
         document.getElementById('instructionScreen').classList.remove('hidden'); 
-        // Remove increment here, move to real start
         this.audio.enable();
     } 
     startRealGame() { this.restartGame(); }
@@ -730,13 +811,13 @@ class Game {
         document.getElementById('ticketScreen').classList.add('hidden');
         document.getElementById('leaderboardModal').classList.remove('active');
         
-        // Show Combo HUD
+        // Show HUDs
         const comboHud = document.getElementById('combo-hud');
         comboHud.classList.remove('hidden');
         comboHud.style.opacity = '1';
+        document.getElementById('level-hud').classList.remove('hidden');
         
         gtag('event', 'game_restart');
-        // 統一在這裡計算遊玩次數 (按下開始/重玩時)
         GoogleSheetAPI.incrementPlayCount();
         
         this.reset(); this.running = true; if(this.balls.length > 0) { this.balls[0].active = true; this.balls[0].dy = -this.balls[0].speed; this.balls[0].dx = (Math.random() - 0.5) * 6; } 
@@ -754,16 +835,15 @@ class Game {
         document.getElementById('formScreen').classList.add('hidden');
         document.getElementById('ticketScreen').classList.add('hidden');
         document.getElementById('leaderboardModal').classList.remove('active');
+        this.closeStoreModal();
         
-        // Hide Combo HUD
+        // Hide HUDs
         document.getElementById('combo-hud').classList.add('hidden');
+        document.getElementById('level-hud').classList.add('hidden');
 
-        // 回到首頁時，抓取最新的總數
         GoogleSheetAPI.fetchLeaderboard(); 
-        // 這裡不需要呼叫 reset，因為 reset 會在 restartGame 時呼叫
         this.reset(); 
         this.drawStaticBackground();
-        // 重新抓取一次總數確保更新
         GoogleSheetAPI.updatePlayCount();
     }
 
@@ -801,22 +881,56 @@ class Game {
         document.getElementById('rankPrediction').innerText = `預測排名: 第 ${predRank} 名`;
         document.getElementById('formScreen').classList.remove('hidden');
         
-        document.getElementById('combo-hud').classList.add('hidden'); // Hide combo on game over
+        document.getElementById('combo-hud').classList.add('hidden'); 
+        document.getElementById('level-hud').classList.add('hidden');
         
         const btn = document.getElementById('submitBtn'); btn.innerText = "確認送出"; btn.disabled = false;
     }
+    
+    // Updated Logic for Smooth Difficulty
+    updateLevel() {
+        // Level up every 10000 points
+        if (this.score - this.lastLevelUpScore >= 10000) {
+            this.level++;
+            // Update tracking
+            this.lastLevelUpScore = Math.floor(this.score / 10000) * 10000;
+            
+            // UI Update
+            document.getElementById('levelVal').innerText = this.level;
+            this.createFloatText("LEVEL UP!", this.width / 2 - 50, this.height / 2);
+            this.audio.playLevelUp();
+            
+            // Adjust Difficulty
+            // Cap level effect at level 20 to prevent impossibility
+            const effectiveLevel = Math.min(this.level, 20);
+            
+            // 1. Brick Speed: Step increase
+            // Base 0.5/0.8 -> Add 0.1 per level
+            this.brickSpeed = this.baseBrickSpeed + (effectiveLevel * 0.1); 
+            
+            // 2. Ball Speed: Gradual increase
+            const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+            const baseBall = isTouch ? 2.5 : 4.0;
+            const newBallSpeed = baseBall + (effectiveLevel * 0.4);
+            
+            this.balls.forEach(b => b.speed = newBallSpeed);
+        }
+    }
+
     update() {
+        // Run Level Check
+        this.updateLevel();
+        
         this.bgParticles.forEach(p => { p.y += p.speed; if(p.y > this.height) { p.y = -5; p.x = Math.random() * this.width; } });
-        const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
         
-        // 動態難度：每 100,000 分提升球速
-        const speedStep = Math.floor(this.score / 100000); 
-        const speedMult = isTouch ? 0.5 : 1.0; 
-        const currentBallSpeed = this.baseBallSpeed + (speedStep * speedMult); 
-        this.balls.forEach(ball => ball.speed = currentBallSpeed);
+        // Spawn Bricks Logic (tied to level)
+        // Faster spawns at higher levels
+        const spawnInterval = Math.max(2000, 4000 - (this.level * 100));
+        if(Date.now() - this.lastBrickSpawnTime > spawnInterval) { 
+            this.spawnBrickRow(3); // Spawn 3 rows at a time
+            this.lastBrickSpawnTime = Date.now(); 
+        }
         
-        this.brickSpeed = (isTouch ? 1.2 : 1.0) + Math.min(1.4, this.score / 20000); 
-        if(Date.now() - this.lastBrickSpawnTime > 4000 - (this.difficultyLevel * 150)) { this.spawnBrickRow(4); this.lastBrickSpawnTime = Date.now(); if(this.difficultyLevel < 20) this.difficultyLevel++; }
         if(this.spenMode) { const now = Date.now(); if(now - this.lastShotTime > 200) { this.shootBullet(); this.lastShotTime = now; } }
         
         if (this.gingerbreadMode) {
@@ -825,9 +939,13 @@ class Game {
         }
 
         let danger = false; 
+        
+        // Movement Logic - Smoother
+        const currentBrickSpeed = this.brickSpeed * (this.aiMode ? 0.5 : 1);
+        
         this.bricks.forEach(b => { 
             if(b.status === 1) { 
-                b.y += this.brickSpeed * (this.aiMode ? 0.5 : 1); 
+                b.y += currentBrickSpeed; 
                 if(b.y + b.h > this.paddle.y - 150) danger = true; 
                 
                 if (this.gingerbreadMode && b.y + b.h >= this.paddle.y) {
@@ -844,7 +962,6 @@ class Game {
         const initialBallCount = this.balls.length;
         this.balls = this.balls.filter(b => b.y <= this.height);
         
-        // 如果球掉落了（數量減少），且並非全部掉落導致遊戲結束，則重置 Combo
         if (this.balls.length < initialBallCount) {
             this.combo = 0;
             const comboEl = document.getElementById('comboVal');
@@ -861,6 +978,9 @@ class Game {
         this.balls.forEach((ball, index) => {
             if (!ball.active) return; 
             
+            // AI Mode slows down balls too
+            let moveSpeed = ball.speed * (this.aiMode ? 0.6 : 1);
+
             if (Math.abs(ball.dx) < 1.5) {
                  ball.dx = (ball.dx >= 0 ? 1 : -1) * 2.0;
             }
@@ -868,7 +988,11 @@ class Game {
             ball.prevY = ball.y; 
             ball.x += ball.dx * (this.aiMode ? 0.6 : 1); 
             ball.y += ball.dy * (this.aiMode ? 0.6 : 1);
-            const maxSpeed = 14; if(ball.dy > maxSpeed) ball.dy = maxSpeed; if(ball.dy < -maxSpeed) ball.dy = -maxSpeed;
+            
+            // Cap Max Vertical Speed to prevent tunneling
+            const maxVSpeed = 12; 
+            if(ball.dy > maxVSpeed) ball.dy = maxVSpeed; 
+            if(ball.dy < -maxVSpeed) ball.dy = -maxVSpeed;
             
             if(ball.x + ball.r > this.width) { 
                 ball.x = this.width - ball.r; 
@@ -903,7 +1027,7 @@ class Game {
 
             if(hit) { 
                 ball.y = this.paddle.y - ball.r - 1; 
-                ball.dy = -Math.abs(ball.speed); 
+                ball.dy = -Math.abs(ball.speed); // Reflect based on current speed
                 
                 let hitPoint = ball.x - (this.paddle.x + this.paddle.w/2); 
                 hitPoint = hitPoint / (this.paddle.w / 2);
@@ -935,9 +1059,8 @@ class Game {
         const comboEl = document.getElementById('comboVal');
         if(comboEl) {
             comboEl.innerText = this.combo;
-            // Trigger pulse animation
             comboEl.parentElement.classList.remove('combo-pulse');
-            void comboEl.parentElement.offsetWidth; // trigger reflow
+            void comboEl.parentElement.offsetWidth; 
             comboEl.parentElement.classList.add('combo-pulse');
         }
 
@@ -948,26 +1071,20 @@ class Game {
         const rand = Math.random();
         let type = null;
         
-        // 難度調整：每 100,000 分降低 1% 機率
-        const diffStep = Math.floor(this.score / 100000);
-        const reduction = diffStep * 0.01;
+        // Decrease drop rate based on Level instead of raw score
+        const reduction = (this.level - 1) * 0.005;
         
-        // 基礎機率約 15% (0.01 to 0.16)，最低降至 1%
         let otherThreshold = 0.16 - reduction;
         if (otherThreshold < 0.02) otherThreshold = 0.02; 
 
-        // 百萬分門檻檢查
         const isHighScore = this.score >= 1000000;
 
-        // 0.000 - 0.005: Gingerbread (若高於 1M 分則不掉落)
         if (rand < 0.005) {
             if (!isHighScore) type = 'gingerbread';
         } 
-        // 0.005 - 0.010: Nuke (若高於 1M 分則不掉落)
         else if (rand < 0.01) {
              if (!isHighScore) type = 'nuke';
         }
-        // 0.010 - Threshold: 其他道具 (機率遞減)
         else if (rand < otherThreshold) {
              const r = Math.random();
              if (r < 0.25) type = 'multiball';
@@ -994,19 +1111,16 @@ class Game {
         else if (type === 'nuke') { 
             this.audio.playNuke(); 
             
-            // Change Background Overlay to Red/Gold Gradient instead of White
             const overlay = document.getElementById('flash-overlay');
             overlay.style.background = 'radial-gradient(circle, rgba(255, 215, 0, 0.8) 0%, rgba(255, 69, 0, 0.4) 50%, transparent 100%)';
             overlay.style.opacity = '1'; 
             
-            // Trigger Screen Shake
             const wrapper = document.getElementById('game-wrapper');
             wrapper.classList.add('shake-effect');
             
             setTimeout(function() { 
                 overlay.style.opacity = '0';
                 wrapper.classList.remove('shake-effect');
-                // Reset background for next use if necessary (optional)
             }, 500); 
             
             this.bricks.forEach(function(b) { if(b.status === 1) { b.status = 0; self.score += 50; self.createParticles(b.x + b.w/2, b.y + b.h/2, '#fff'); } }); 
@@ -1028,22 +1142,13 @@ class Game {
     createParticles(x, y, color) { for(let i=0; i<8; i++) this.particles.push({ x: x, y: y, dx: (Math.random()-0.5)*5, dy: (Math.random()-0.5)*5, life: 1, color: color }); }
     createFloatText(text, x, y) { const div = document.createElement('div'); div.innerText = text; div.style.position = 'absolute'; div.style.left = x + 'px'; div.style.top = y + 'px'; div.style.color = '#fff'; div.style.fontWeight = 'bold'; div.style.fontSize = '20px'; div.style.textShadow = '0 0 10px #00c3ff'; div.style.pointerEvents = 'none'; div.style.transition = 'all 1s'; document.body.appendChild(div); requestAnimationFrame(() => { div.style.top = (y - 100) + 'px'; div.style.opacity = 0; }); setTimeout(() => div.remove(), 1000); }
     
-    drawStaticBackground() { 
-        if(this.bgImage.complete && this.bgImage.naturalWidth > 0) {
-             this.ctx.drawImage(this.bgImage, 0, 0, this.width, this.height);
-        } else {
-             this.ctx.fillStyle = '#000'; 
-             this.ctx.fillRect(0, 0, this.width, this.height);
-        }
-        
-        this.ctx.fillStyle = 'rgba(0, 195, 255, 0.5)'; 
-        if(this.bgParticles) { 
-            this.bgParticles.forEach(p => { 
-                this.ctx.globalAlpha = p.alpha; 
-                this.ctx.fillRect(p.x, p.y, p.size, p.size); 
-                this.ctx.globalAlpha = 1; 
-            }); 
-        } 
+    // New Helper to show Store Modal
+    openStoreModal() {
+        document.getElementById('storeModal').classList.add('active');
+    }
+    
+    closeStoreModal() {
+        document.getElementById('storeModal').classList.remove('active');
     }
 
     draw() {
@@ -1074,6 +1179,7 @@ class Game {
         this.ctx.fillStyle = '#ffff00'; this.bullets.forEach(b => this.ctx.fillRect(b.x, b.y, b.w, b.h));
         this.particles.forEach(p => { this.ctx.globalAlpha = p.life; this.ctx.fillStyle = p.color; this.ctx.beginPath(); this.ctx.arc(p.x, p.y, 3, 0, Math.PI*2); this.ctx.fill(); this.ctx.globalAlpha = 1; });
     }
+
     loop() { if(!this.running) return; this.update(); this.draw(); requestAnimationFrame(() => this.loop()); }
 }
 
