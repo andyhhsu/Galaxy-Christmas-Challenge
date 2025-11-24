@@ -1075,7 +1075,7 @@ class Game {
         const reduction = (this.level - 1) * 0.005;
         
         let otherThreshold = 0.16 - reduction;
-        if (otherThreshold < 0.02) otherThreshold = 0.02; 
+        if (otherThreshold < 0.06) otherThreshold = 0.06; // Fix: Min 5% chance for common items
 
         const isHighScore = this.score >= 1000000;
 
