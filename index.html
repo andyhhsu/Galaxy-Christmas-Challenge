@@ -24,36 +24,6 @@
         
         #flash-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; pointer-events: none; z-index: 40; transition: opacity 0.1s; mix-blend-mode: screen; }
         
-        /* Fog Overlay */
-        #fog-overlay { 
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            background: radial-gradient(circle, transparent 30%, rgba(200, 200, 200, 0.8) 90%);
-            backdrop-filter: blur(4px);
-            opacity: 0; pointer-events: none; z-index: 35; transition: opacity 0.5s; 
-        }
-
-        /* Fever Bar */
-        #fever-container {
-            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
-            width: 80%; height: 8px; background: rgba(255,255,255,0.1);
-            border-radius: 4px; overflow: hidden; z-index: 15; pointer-events: none;
-            border: 1px solid rgba(255,255,255,0.2);
-        }
-        #fever-fill {
-            width: 0%; height: 100%; background: linear-gradient(90deg, #ff4500, #ffd700);
-            transition: width 0.2s;
-            box-shadow: 0 0 10px #ff4500;
-        }
-        .fever-active #fever-fill {
-            animation: feverPulse 0.5s infinite alternate;
-        }
-        @keyframes feverPulse { from { filter: brightness(1); } to { filter: brightness(1.5); } }
-        #fever-text {
-            position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%);
-            color: #ff4500; font-family: 'Orbitron'; font-weight: 900; font-size: 24px;
-            text-shadow: 0 0 10px #ffd700; opacity: 0; pointer-events: none; transition: opacity 0.2s; z-index: 16; letter-spacing: 2px; width: 100%; text-align: center;
-        }
-
         @keyframes shake {
             0% { transform: translate(0, 0) rotate(0deg); }
             10% { transform: translate(-5px, -5px) rotate(-1deg); }
@@ -83,6 +53,28 @@
         #level-hud { position: absolute; top: 20px; right: 70px; pointer-events: none; z-index: 15; text-align: right; }
         .level-label { font-size: 10px; color: #aaa; letter-spacing: 1px; font-family: 'Orbitron'; }
         .level-value { font-family: 'Orbitron', sans-serif; font-size: 18px; color: #fff; font-weight: bold; }
+
+        /* Fever Bar */
+        #fever-container {
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+            width: 80%; height: 8px; background: rgba(255,255,255,0.1);
+            border-radius: 4px; overflow: hidden; z-index: 15; pointer-events: none;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        #fever-fill {
+            width: 0%; height: 100%; background: linear-gradient(90deg, #ff4500, #ffd700);
+            transition: width 0.2s;
+            box-shadow: 0 0 10px #ff4500;
+        }
+        .fever-active #fever-fill {
+            animation: feverPulse 0.5s infinite alternate;
+        }
+        @keyframes feverPulse { from { filter: brightness(1); } to { filter: brightness(1.5); } }
+        #fever-text {
+            position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%);
+            color: #ff4500; font-family: 'Orbitron'; font-weight: 900; font-size: 24px;
+            text-shadow: 0 0 10px #ffd700; opacity: 0; pointer-events: none; transition: opacity 0.2s; z-index: 16; letter-spacing: 2px; width: 100%; text-align: center;
+        }
 
         .hud-label { font-size: 10px; color: #00c3ff; letter-spacing: 2px; font-family: 'Orbitron'; opacity: 0.9; }
         .hud-value { font-family: 'Orbitron', sans-serif; font-size: 24px; color: white; font-weight: bold; text-shadow: 0 0 10px rgba(0, 195, 255, 0.5); line-height: 1; }
@@ -165,6 +157,14 @@
         .store-list-item { padding: 12px; border-bottom: 1px solid #222; color: #ccc; font-size: 14px; }
         .store-list-item:last-child { border-bottom: none; }
         .store-region { color: #00c3ff; font-weight: bold; margin-bottom: 4px; font-family: 'Orbitron'; font-size: 12px; }
+        
+        /* Fog Overlay */
+        #fog-overlay { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            background: radial-gradient(circle, transparent 30%, rgba(200, 200, 200, 0.8) 90%);
+            backdrop-filter: blur(4px);
+            opacity: 0; pointer-events: none; z-index: 35; transition: opacity 0.5s; 
+        }
     </style>
 </head>
 <body onclick="game.unlockAudio()"> 
@@ -827,6 +827,9 @@ class Game {
         this.feverType = null;
         this.feverMax = 25; // Bricks needed to trigger fever
         this.fogActive = false;
+        this.multiballReady = false; // New flag for split
+        this.blackHoleActive = false; // Reset black hole
+        this.blackHolePos = {x:0, y:0}; // Reset pos
         this.fogOverlay.style.opacity = '0';
         this.feverFill.style.width = '0%';
         this.feverText.style.opacity = '0';
@@ -1013,10 +1016,14 @@ class Game {
             // To drain 25 in 5s: 25 / (60*5) = 0.0833 per frame
             this.feverEnergy -= 0.0833; 
             
-            // Gatling logic
+            // Gatling logic - BARRAGE
             if (this.feverType === 'gatling') {
-                if (this.frame % 10 === 0) { // Fire every 10 frames
-                    this.shootBullet(); 
+                if (this.frame % 5 === 0) { // Fire every 5 frames (faster)
+                    // Shoot 3 bullets with spread
+                    this.bullets.push({ x: this.paddle.x + this.paddle.w/2, y: this.paddle.y, w: 4, h: 10, dx: 0, dy: -15, color: '#ffd700' }); // Center Gold
+                    this.bullets.push({ x: this.paddle.x + this.paddle.w/2 - 10, y: this.paddle.y, w: 4, h: 10, dx: -3, dy: -14, color: '#00ffff' }); // Left Cyan
+                    this.bullets.push({ x: this.paddle.x + this.paddle.w/2 + 10, y: this.paddle.y, w: 4, h: 10, dx: 3, dy: -14, color: '#00ffff' }); // Right Cyan
+                    this.audio.playShoot();
                 }
             }
 
@@ -1024,6 +1031,7 @@ class Game {
                 this.feverMode = false;
                 this.feverEnergy = 0;
                 this.feverType = null;
+                this.multiballReady = false; // Reset flag
                 
                 // Reset effects
                 this.balls.forEach(b => b.r = 8);
@@ -1091,6 +1099,31 @@ class Game {
         if (this.balls.length === 0 && this.running) { 
              this.gameOver("SIGNAL LOST"); 
         }
+        
+        // Update Black Hole Logic
+        if (this.blackHoleActive) {
+            // Draw/Update Black Hole Animation state if needed
+            // Move all balls towards black hole
+            this.balls.forEach(b => {
+                let dx = this.blackHolePos.x - b.x;
+                let dy = this.blackHolePos.y - b.y;
+                let dist = Math.sqrt(dx*dx + dy*dy);
+                
+                if (dist > 5) {
+                    b.x += dx * 0.1; // Suction speed
+                    b.y += dy * 0.1;
+                    b.r *= 0.95; // Shrink
+                } else {
+                    b.active = false; // Eaten
+                }
+            });
+            this.balls = this.balls.filter(b => b.active);
+            
+            if (this.balls.length === 0) {
+                setTimeout(() => this.gameOver("CONSUMED BY DARKNESS"), 500);
+            }
+            return; // Skip normal update
+        }
 
         this.balls.forEach((ball, index) => {
             if (!ball.active) return; 
@@ -1098,8 +1131,14 @@ class Game {
             // AI Mode slows down balls too
             let moveSpeed = ball.speed * (this.aiMode ? 0.6 : 1);
 
+            // Fix: Prevent vertical locking
             if (Math.abs(ball.dx) < 1.5) {
                  ball.dx = (ball.dx >= 0 ? 1 : -1) * 2.0;
+            }
+
+            // Fix: Prevent horizontal locking
+            if (Math.abs(ball.dy) < 1.0) {
+                 ball.dy = (ball.dy >= 0 ? 1 : -1) * 1.5;
             }
 
             ball.prevY = ball.y; 
@@ -1176,6 +1215,26 @@ class Game {
                    ball.y + ball.r > b.y && 
                    ball.y - ball.r < b.y+b.h) { 
                     
+                    // MULTIBALL SPLIT LOGIC - ON IMPACT
+                    if (this.feverMode && this.feverType === 'multiball' && this.multiballReady) {
+                        this.multiballReady = false; // One time split
+                        // Spawn 6 balls
+                        for(let i=0; i<6; i++) {
+                            let angle = (Math.PI * 2 * i) / 6; // Circle spread
+                            this.balls.push({ 
+                                x: ball.x, 
+                                y: ball.y, 
+                                r: 6, 
+                                dx: Math.cos(angle) * ball.speed, 
+                                dy: Math.sin(angle) * ball.speed, 
+                                speed: ball.speed, 
+                                active: true 
+                            });
+                        }
+                        this.createFloatText("SPLIT!", ball.x, ball.y);
+                        this.audio.playPowerUp(); // Split sound
+                    }
+
                     // FEVER MODE CHECK
                     if (this.feverMode && (this.feverType === 'fireball' || this.feverType === 'meteor')) {
                          // Pass through (do nothing to velocity)
@@ -1189,7 +1248,19 @@ class Game {
         });
 
         this.powerUps.forEach((p, i) => { p.y += 3; if(p.y + 15 > this.paddle.y && p.y - 15 < this.paddle.y + this.paddle.h && p.x > this.paddle.x && p.x < this.paddle.x + this.paddle.w) { this.activatePowerUp(p.type); this.powerUps.splice(i, 1); } if(p.y > this.height) this.powerUps.splice(i, 1); });
-        this.bullets.forEach((b, i) => { b.y -= 15; this.bricks.forEach(brick => { if(brick.status === 1 && b.x > brick.x && b.x < brick.x + brick.w && b.y > brick.y && b.y < brick.y + brick.h) { this.destroyBrick(brick); this.bullets.splice(i, 1); } }); if(b.y < 0) this.bullets.splice(i, 1); });
+        // Updated bullet update logic to handle custom dx/dy
+        this.bullets.forEach((b, i) => { 
+            b.y += (b.dy || -15); 
+            b.x += (b.dx || 0);
+            
+            this.bricks.forEach(brick => { 
+                if(brick.status === 1 && b.x > brick.x && b.x < brick.x + brick.w && b.y > brick.y && b.y < brick.y + brick.h) { 
+                    this.destroyBrick(brick); 
+                    this.bullets.splice(i, 1); 
+                } 
+            }); 
+            if(b.y < 0 || b.x < 0 || b.x > this.width) this.bullets.splice(i, 1); 
+        });
         this.particles.forEach((p, i) => { p.x += p.dx; p.y += p.dy; p.life -= 0.05; if(p.life <= 0) this.particles.splice(i, 1); });
         this.bricks = this.bricks.filter(b => b.status === 1);
     }
@@ -1217,17 +1288,7 @@ class Game {
                 
                 // Trigger specific start actions
                 if (this.feverType === 'multiball') {
-                    for(let i=0; i<6; i++) {
-                        this.balls.push({ 
-                            x: this.paddle.x + this.paddle.w/2, 
-                            y: this.paddle.y - 20, 
-                            r: 8, 
-                            dx: (Math.random() - 0.5) * 10, 
-                            dy: -Math.abs(this.baseBallSpeed * 1.5), // Ensure upward
-                            speed: this.baseBallSpeed * 1.5, 
-                            active: true 
-                        });
-                    }
+                   this.multiballReady = true; // Set flag for impact split
                 } else if (this.feverType === 'meteor') {
                     this.balls.forEach(b => b.r = 24); // Big balls
                 }
@@ -1285,9 +1346,12 @@ class Game {
         else if (rand < otherThreshold) {
              // Sub-random for type selection
              const r = Math.random();
-             // 10% chance for Debuffs
-             if (r < 0.10) {
-                 type = Math.random() > 0.5 ? 'shrink' : 'fog';
+             // 15% chance for Debuffs (including Black Hole)
+             if (r < 0.15) {
+                 const debuffRoll = Math.random();
+                 if (debuffRoll < 0.33) type = 'shrink';
+                 else if (debuffRoll < 0.66) type = 'fog';
+                 else type = 'blackhole';
              }
              // 20% chance for Multiball
              else if (r < 0.30) {
@@ -1304,7 +1368,7 @@ class Game {
     }
     activatePowerUp(type) {
         // Play sound logic - check for debuff
-        if (type === 'shrink' || type === 'fog') {
+        if (type === 'shrink' || type === 'fog' || type === 'blackhole') {
             this.audio.playDebuff();
         } else {
             this.audio.playPowerUp();
@@ -1314,7 +1378,7 @@ class Game {
         let iconMap = {
             'expand': '📱', 'spen': '🖊️', 'ai': '❄️', 'nuke': '🎁', 
             'multiball': '🔴', 'gingerbread': '🍪',
-            'shrink': '🤏', 'fog': '🌫️'
+            'shrink': '🤏', 'fog': '🌫️', 'blackhole': '🕳️'
         };
         
         this.createFloatText(iconMap[type] || type.toUpperCase(), this.paddle.x, this.paddle.y - 50); 
@@ -1337,6 +1401,11 @@ class Game {
                 this.fogActive = false;
                 this.fogOverlay.style.opacity = '0';
             }, 5000);
+        }
+        else if (type === 'blackhole') {
+            this.blackHoleActive = true;
+            this.blackHolePos = {x: this.paddle.x + this.paddle.w/2, y: this.paddle.y - 20}; // Set pos
+            // No timeout, it ends the game
         }
         else if (type === 'gingerbread') {
              this.gingerbreadMode = true;
@@ -1402,6 +1471,22 @@ class Game {
         this.ctx.strokeStyle = 'rgba(0, 195, 255, 0.3)'; this.ctx.beginPath(); this.ctx.setLineDash([5, 15]); this.ctx.moveTo(0, this.paddle.y - 10); this.ctx.lineTo(this.width, this.paddle.y - 10); this.ctx.stroke(); this.ctx.setLineDash([]);
         
         this.drawPaddle(this.paddle.x, this.paddle.y, this.paddle.w, this.paddle.h, this.paddle.state, this.paddle.color);
+        
+        // Draw Black Hole if active
+        if (this.blackHoleActive) {
+            this.ctx.save();
+            this.ctx.translate(this.blackHolePos.x, this.blackHolePos.y);
+            this.ctx.rotate(this.frame * 0.1);
+            // Draw simple spiral or black circle with ring
+            this.ctx.beginPath();
+            this.ctx.arc(0, 0, 30, 0, Math.PI * 2);
+            this.ctx.fillStyle = 'black';
+            this.ctx.fill();
+            this.ctx.strokeStyle = 'purple';
+            this.ctx.lineWidth = 4;
+            this.ctx.stroke();
+            this.ctx.restore();
+        }
 
         this.balls.forEach(ball => { if(ball.active) { this.ctx.beginPath(); this.ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI*2); 
             // Fever visual change
@@ -1424,7 +1509,7 @@ class Game {
             this.ctx.beginPath(); this.ctx.arc(p.x, p.y - 5, 20, 0, Math.PI*2); this.ctx.fillStyle = 'rgba(0,0,0,0.5)'; this.ctx.fill();
             let strokeColor = '#fff'; 
             if (p.type === 'nuke') strokeColor = '#ef4444'; 
-            else if (p.type === 'shrink' || p.type === 'fog') strokeColor = '#ff0000'; // Debuffs
+            else if (p.type === 'shrink' || p.type === 'fog' || p.type === 'blackhole') strokeColor = '#ff0000'; // Debuffs
             else if (p.type === 'multiball') strokeColor = '#22c55e'; 
             else if (p.type === 'expand') strokeColor = '#00c3ff'; 
             else if (p.type === 'spen') strokeColor = '#ffff00'; 
@@ -1440,6 +1525,7 @@ class Game {
             else if(p.type === 'multiball') icon = "🔴";
             else if(p.type === 'shrink') icon = "🤏";
             else if(p.type === 'fog') icon = "🌫️";
+            else if(p.type === 'blackhole') icon = "🕳️";
             
             if (p.type === 'gingerbread') icon = "🍪";
             this.ctx.fillText(icon, p.x, p.y);
