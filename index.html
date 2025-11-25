@@ -35,6 +35,8 @@
             100% { transform: translate(0, 0) rotate(0deg); }
         }
         .shake-effect { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
+        /* Short shake for Titan impact */
+        .shake-sm { animation: shake 0.2s cubic-bezier(.36,.07,.19,.97) both; }
 
         .ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(12px); z-index: 50; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); opacity: 1; visibility: visible; padding: 20px; }
         .ui-layer.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
@@ -228,7 +230,7 @@
             </div>
 
             <div class="text-center mb-8 mt-4">
-                <h1 class="text-4xl md:text-6xl font-black text-white tracking-tighter mb-1" style="font-family: 'Orbitron'; text-shadow: 0 0 20px rgba(0,195,255,0.5);">GALAXY</h1>
+                <h1 class="text-4xl md:text-6xl font-black text-white tracking-tighter mb-1" style="font-family: 'Orbitron'; text-shadow: 0 0 20px rgba(0,195,255,0.5);">Galaxy</h1>
                 <h2 class="text-base md:text-xl text-red-600 tracking-[0.3em] font-bold font-orbitron mt-2 whitespace-nowrap" style="text-shadow: 0 0 10px rgba(220,38,38,0.8);">CHRISTMAS CHALLENGE</h2>
             </div>
             
@@ -800,7 +802,21 @@ class Game {
     }
     initParticles() { this.bgParticles = []; for(let i=0; i<40; i++) this.bgParticles.push({ x: Math.random() * this.width, y: Math.random() * this.height, size: Math.random() * 2 + 1, speed: Math.random() * 0.5 + 0.2, alpha: Math.random() * 0.5 }); }
     bindEvents() {
-        const moveHandler = (x) => { if(!this.running) return; const wrapper = document.getElementById('game-wrapper'); const rect = wrapper.getBoundingClientRect(); const relativeX = x - rect.left; this.paddle.x = relativeX - this.paddle.w / 2; if(this.paddle.x < 0) this.paddle.x = 0; if(this.paddle.x + this.paddle.w > this.width) this.paddle.x = this.width - this.paddle.w; };
+        const moveHandler = (x) => { 
+            if(!this.running) return; 
+            const wrapper = document.getElementById('game-wrapper'); 
+            const rect = wrapper.getBoundingClientRect(); 
+            const relativeX = x - rect.left; 
+            
+            this.paddle.x = relativeX - this.paddle.w / 2; 
+            
+            // Fix for Gingerbread wide paddle: Only clamp if paddle is smaller than screen
+            if (this.paddle.w <= this.width) {
+                if(this.paddle.x < 0) this.paddle.x = 0; 
+                if(this.paddle.x + this.paddle.w > this.width) this.paddle.x = this.width - this.paddle.w; 
+            }
+            // If paddle is wider than screen (Gingerbread), allow it to move freely (center follows finger)
+        };
         this.canvas.addEventListener('mousemove', e => moveHandler(e.clientX));
         this.canvas.addEventListener('touchstart', e => { e.preventDefault(); moveHandler(e.touches[0].clientX); }, { passive: false });
         this.canvas.addEventListener('touchmove', e => { e.preventDefault(); moveHandler(e.touches[0].clientX); }, { passive: false });
@@ -830,8 +846,14 @@ class Game {
         this.feverMax = 25; // Bricks needed to trigger fever
         this.fogActive = false;
         this.multiballReady = false; // New flag for split
-        this.blackHoleActive = false; // Reset black hole
-        this.blackHolePos = {x:0, y:0}; // Reset pos
+        
+        // Black Hole States
+        this.blackHoleActive = false; 
+        this.blackHolePos = {x:0, y:0};
+        
+        // Gravity Warning State
+        this.gravityWarningShown = false;
+
         this.fogOverlay.style.opacity = '0';
         this.feverFill.style.width = '0%';
         this.feverText.style.opacity = '0';
@@ -1000,12 +1022,30 @@ class Game {
             });
         }
     }
+    
+    triggerGravityWarning() {
+        const overlay = document.getElementById('flash-overlay');
+        overlay.style.background = 'radial-gradient(circle, rgba(255, 0, 0, 0.6) 0%, rgba(100, 0, 0, 0.8) 100%)'; // Red flash
+        overlay.style.opacity = '1'; 
+        
+        this.createFloatText("WARNING: GRAVITY DETECTED", this.width/2 - 120, this.height/2);
+        
+        setTimeout(() => {
+            overlay.style.opacity = '0';
+        }, 1500);
+    }
 
     update() {
         this.frame++;
         
         // Run Level Check
         this.updateLevel();
+        
+        // Gravity Warning Check (Global Event at 100k)
+        if (this.score >= 100000 && !this.gravityWarningShown) {
+            this.gravityWarningShown = true;
+            this.triggerGravityWarning();
+        }
         
         // Fever Timer
         if (this.feverMode) {
@@ -1063,8 +1103,8 @@ class Game {
         if(this.spenMode) { const now = Date.now(); if(now - this.lastShotTime > 200) { this.shootBullet(); this.lastShotTime = now; } }
         
         if (this.gingerbreadMode) {
-            this.paddle.x = 0;
-            this.paddle.w = this.width;
+            // Ensure width stays consistent (Scheme A)
+            // Removed old logic that locked x position
         }
 
         let danger = false; 
@@ -1254,6 +1294,16 @@ class Game {
                          // Fireball (Rudolph) is Red, Meteor (Titan) is White/Blue
                          let particleColor = this.feverType === 'fireball' ? '#ff0000' : '#f0f8ff';
                          this.createParticles(ball.x, ball.y, particleColor);
+                         
+                         // Titan Shake Effect
+                         if (this.feverType === 'meteor') {
+                             const wrapper = document.getElementById('game-wrapper');
+                             wrapper.classList.remove('shake-sm');
+                             void wrapper.offsetWidth; // Force reflow
+                             wrapper.classList.add('shake-sm');
+                             setTimeout(() => wrapper.classList.remove('shake-sm'), 200);
+                         }
+
                     } else {
                         ball.dy *= -1; // Normal bounce
                     }
@@ -1367,26 +1417,33 @@ class Game {
              type = 'blackhole';
         }
         // Logic to include debuffs in the "other" pool
-        // 0.000 - 0.005: Gingerbread (if < 1M)
+        
+        // 0.000 - 0.005: Gingerbread (0.5%)
         else if (rand < 0.005) {
             if (!isHighScore) type = 'gingerbread';
         } 
-        // 0.005 - 0.010: Nuke (if < 1M)
+        // 0.005 - 0.010: Nuke (0.5%)
         else if (rand < 0.01) {
              if (!isHighScore) type = 'nuke';
         }
-        // 0.010 - Threshold: Others
+        // 0.010 - 0.015: Black Hole (0.5%) - FIXED RATE IN GENERAL POOL
+        else if (rand < 0.015) {
+             if (this.score > 100000) {
+                 type = 'blackhole';
+             } else {
+                 // Fallback if < 100k (don't spawn black hole)
+                 type = 'fog'; // Forced Fog as requested
+             }
+        }
+        // 0.015 - Threshold: Others
         else if (rand < otherThreshold) {
              // Sub-random for type selection
              const r = Math.random();
-             // 15% chance for Debuffs (including Black Hole)
+             // 15% chance for Debuffs (Shrink / Fog only now)
              if (r < 0.15) {
                  const debuffRoll = Math.random();
-                 if (debuffRoll < 0.33) type = 'shrink';
-                 else if (debuffRoll < 0.66) type = 'fog';
-                 // UPDATED: Only allow blackhole if score > 100k
-                 else if (this.score > 100000) type = 'blackhole';
-                 else type = 'fog'; // Fallback for low levels
+                 if (debuffRoll < 0.5) type = 'shrink';
+                 else type = 'fog';
              }
              // 20% chance for Multiball
              else if (r < 0.30) {
@@ -1397,6 +1454,11 @@ class Game {
                  const commonTypes = ['expand', 'spen', 'ai'];
                  type = commonTypes[Math.floor(Math.random() * commonTypes.length)];
              }
+        }
+        
+        // Final Safety Check: Ensure no Black Hole under 100k
+        if (type === 'blackhole' && this.score < 100000) {
+            type = 'fog';
         }
         
         if (type) this.powerUps.push({ x: b.x + b.w/2, y: b.y, type: type });
@@ -1444,6 +1506,7 @@ class Game {
         }
         else if (type === 'gingerbread') {
              this.gingerbreadMode = true;
+             this.paddle.w = this.width * 1.5; // Scheme A: Wide paddle
              setTimeout(() => {
                  this.gingerbreadMode = false;
                  this.paddle.w = 100; 
