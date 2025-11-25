@@ -105,7 +105,7 @@
         .ticket-label-sm { color: #00c3ff; font-size: 10px; letter-spacing: 1px; font-weight: bold; text-transform: uppercase; }
         .ticket-score-block { text-align: right; }
         .ticket-score-big { color: #ffd700; font-family: 'Orbitron'; font-size: 20px; font-weight: 900; line-height: 1; text-shadow: 0 2px 10px rgba(0,0,0,0.8); }
-        .redeem-text { color: #ffd700; font-size: 14px; font-weight: bold; text-align: center; margin-bottom: 20px; text-shadow: 0 0 10px rgba(255, 215, 0, 0.5); animation: pulseText 2s infinite; font-family: 'Noto Sans TC'; letter-spacing: 1px; }
+        .redeem-text { color: #ffd700; font-size: 14px; font-weight: bold; text-align: center; margin-bottom: 20px; text-shadow: 0 0 10px rgba(255, 215, 0, 0.5); animation: pulseText 2s infinite; font-family: 'Noto Sans TC'; letter-spacing: 1px; line-height: 1.6; }
         @keyframes pulseText { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
         .instruction-box { background: rgba(10, 12, 16, 0.9); border: 1px solid #333; border-left: 3px solid #00c3ff; border-radius: 8px; padding: 16px; width: 100%; max-width: 420px; margin-bottom: 20px; text-align: left; }
         .inst-title { color: #fff; font-weight: bold; font-size: 14px; margin-bottom: 8px; letter-spacing: 2px; font-family: 'Orbitron'; }
@@ -780,7 +780,7 @@ class Game {
         
         // Initial Speeds
         const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-        this.baseBrickSpeed = isTouch ? 0.8 : 0.5; // Start slower
+        this.baseBrickSpeed = isTouch ? 0.6 : 0.5; // Reduced from 0.8 for mobile
         this.brickSpeed = this.baseBrickSpeed;
         
         const paddleY = this.height - 120;
@@ -788,7 +788,7 @@ class Game {
         
         // Initial Ball Speed based on level 1
         // Adjusted lower starting speed for mobile as requested
-        const initialBallSpeed = isTouch ? 2.0 : 4.0;
+        const initialBallSpeed = isTouch ? 1.5 : 4.0; // Reduced from 2.0
         this.balls = []; this.balls.push({ x: this.width/2, y: paddleY - 20, r: 8, dx: 0, dy: 0, speed: initialBallSpeed, active: false, prevY: paddleY - 20 });
         this.bricks = []; this.particles = []; this.powerUps = []; this.bullets = [];
         this.aiMode = false; this.spenMode = false; this.gingerbreadMode = false; this.dangerOverlay.classList.remove('danger-pulse');
@@ -912,8 +912,8 @@ class Game {
             // 2. Ball Speed: Gradual increase
             const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
             // Lowered base speed and increment for mobile
-            const baseBall = isTouch ? 2.0 : 4.0;
-            const speedInc = isTouch ? 0.25 : 0.4;
+            const baseBall = isTouch ? 1.5 : 4.0; // Reduced from 2.0
+            const speedInc = isTouch ? 0.15 : 0.4; // Reduced from 0.25
             const newBallSpeed = baseBall + (effectiveLevel * speedInc);
             
             this.balls.forEach(b => b.speed = newBallSpeed);
