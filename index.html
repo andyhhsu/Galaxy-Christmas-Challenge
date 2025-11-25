@@ -1354,13 +1354,15 @@ class Game {
         
         // --- Dynamic Black Hole Chance ---
         let highLevelBlackHoleChance = 0;
-        if (this.score > 500000) {
-            // Increase chance by 1% every 100k points after 500k, max 10%
-            highLevelBlackHoleChance = Math.min(0.1, (this.score - 500000) / 5000000); 
+        // UPDATED: 100k instead of 500k
+        if (this.score > 100000) {
+            // Increase chance by 1% every 100k points after 100k, max 10%
+            highLevelBlackHoleChance = Math.min(0.1, (this.score - 100000) / 5000000); 
         }
         
         // Priority check for High Score Black Hole
-        if (this.score > 500000 && rand < highLevelBlackHoleChance) {
+        // UPDATED: 100k instead of 500k
+        if (this.score > 100000 && rand < highLevelBlackHoleChance) {
              type = 'blackhole';
         }
         // Logic to include debuffs in the "other" pool
@@ -1381,7 +1383,9 @@ class Game {
                  const debuffRoll = Math.random();
                  if (debuffRoll < 0.33) type = 'shrink';
                  else if (debuffRoll < 0.66) type = 'fog';
-                 else type = 'blackhole';
+                 // UPDATED: Only allow blackhole if score > 100k
+                 else if (this.score > 100000) type = 'blackhole';
+                 else type = 'fog'; // Fallback for low levels
              }
              // 20% chance for Multiball
              else if (r < 0.30) {
