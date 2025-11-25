@@ -51,7 +51,7 @@
         #fever-text {
             position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%);
             color: #ff4500; font-family: 'Orbitron'; font-weight: 900; font-size: 24px;
-            text-shadow: 0 0 10px #ffd700; opacity: 0; pointer-events: none; transition: opacity 0.2s; z-index: 16; letter-spacing: 2px;
+            text-shadow: 0 0 10px #ffd700; opacity: 0; pointer-events: none; transition: opacity 0.2s; z-index: 16; letter-spacing: 2px; width: 100%; text-align: center;
         }
 
         @keyframes shake {
@@ -644,6 +644,7 @@ class Game {
         this.canvas = document.getElementById('gameCanvas');
         this.ctx = this.canvas.getContext('2d');
         this.audio = new SoundManager();
+        this.frame = 0;
         
         this.width = this.canvas.clientWidth || window.innerWidth; 
         this.height = this.canvas.clientHeight || window.innerHeight; 
@@ -805,6 +806,7 @@ class Game {
     
     reset() {
         this.running = false; this.score = 0; if(this.hudScore) this.hudScore.innerText = "0";
+        this.frame = 0;
         
         // Reset Level
         this.level = 1;
@@ -822,6 +824,7 @@ class Game {
         // Reset Fever & Fog
         this.feverEnergy = 0;
         this.feverMode = false;
+        this.feverType = null;
         this.feverMax = 25; // Bricks needed to trigger fever
         this.fogActive = false;
         this.fogOverlay.style.opacity = '0';
@@ -997,6 +1000,8 @@ class Game {
     }
 
     update() {
+        this.frame++;
+        
         // Run Level Check
         this.updateLevel();
         
@@ -1008,9 +1013,21 @@ class Game {
             // To drain 25 in 5s: 25 / (60*5) = 0.0833 per frame
             this.feverEnergy -= 0.0833; 
             
+            // Gatling logic
+            if (this.feverType === 'gatling') {
+                if (this.frame % 10 === 0) { // Fire every 10 frames
+                    this.shootBullet(); 
+                }
+            }
+
             if (this.feverEnergy <= 0) {
                 this.feverMode = false;
                 this.feverEnergy = 0;
+                this.feverType = null;
+                
+                // Reset effects
+                this.balls.forEach(b => b.r = 8);
+
                 document.getElementById('fever-container').classList.remove('fever-active');
                 this.feverText.style.opacity = '0';
             }
@@ -1152,14 +1169,19 @@ class Game {
             
             // Collision Check for Bricks
             this.bricks.forEach(b => { 
-                if(b.status === 1 && ball.x > b.x && ball.x < b.x+b.w && ball.y > b.y && ball.y < b.y+b.h) { 
+                // Using radius check for all balls now
+                if(b.status === 1 && 
+                   ball.x + ball.r > b.x && 
+                   ball.x - ball.r < b.x+b.w && 
+                   ball.y + ball.r > b.y && 
+                   ball.y - ball.r < b.y+b.h) { 
+                    
                     // FEVER MODE CHECK
-                    if (!this.feverMode) {
-                        ball.dy *= -1; // Normal bounce
+                    if (this.feverMode && (this.feverType === 'fireball' || this.feverType === 'meteor')) {
+                         // Pass through (do nothing to velocity)
+                         this.createParticles(ball.x, ball.y, '#ff4500');
                     } else {
-                        // Pass through (do nothing to velocity)
-                        // Maybe create extra particles
-                        this.createParticles(ball.x, ball.y, '#ff4500');
+                        ball.dy *= -1; // Normal bounce
                     }
                     this.destroyBrick(b); 
                 } 
@@ -1188,10 +1210,40 @@ class Game {
             
             if (this.feverEnergy >= this.feverMax) {
                 this.feverMode = true;
+                
+                // --- Random Fever Type Selection ---
+                const types = ['fireball', 'multiball', 'gatling', 'meteor'];
+                this.feverType = types[Math.floor(Math.random() * types.length)];
+                
+                // Trigger specific start actions
+                if (this.feverType === 'multiball') {
+                    for(let i=0; i<6; i++) {
+                        this.balls.push({ 
+                            x: this.paddle.x + this.paddle.w/2, 
+                            y: this.paddle.y - 20, 
+                            r: 8, 
+                            dx: (Math.random() - 0.5) * 10, 
+                            dy: -Math.abs(this.baseBallSpeed * 1.5), // Ensure upward
+                            speed: this.baseBallSpeed * 1.5, 
+                            active: true 
+                        });
+                    }
+                } else if (this.feverType === 'meteor') {
+                    this.balls.forEach(b => b.r = 24); // Big balls
+                }
+
                 this.audio.playFever();
                 document.getElementById('fever-container').classList.add('fever-active');
                 this.feverText.style.opacity = '1';
-                this.createFloatText("FEVER!", this.width/2 - 30, this.height/2);
+                
+                // Float text for specific type
+                let typeName = "FEVER!";
+                if(this.feverType === 'fireball') typeName = "🔥 FIREBALL!";
+                if(this.feverType === 'multiball') typeName = "🌪️ STORM!";
+                if(this.feverType === 'gatling') typeName = "🔫 GATLING!";
+                if(this.feverType === 'meteor') typeName = "☄️ METEOR!";
+                
+                this.createFloatText(typeName, this.width/2 - 50, this.height/2);
             }
         }
         
@@ -1354,8 +1406,8 @@ class Game {
         this.balls.forEach(ball => { if(ball.active) { this.ctx.beginPath(); this.ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI*2); 
             // Fever visual change
             if (this.feverMode) {
-                this.ctx.fillStyle = '#ff4500'; // Red/Orange ball
-                this.ctx.shadowColor = '#ffd700'; // Gold glow
+                this.ctx.fillStyle = this.feverType === 'fireball' ? '#ff4500' : (this.feverType === 'meteor' ? '#ffd700' : '#00ffff'); 
+                this.ctx.shadowColor = '#ffd700'; 
                 this.ctx.shadowBlur = 20;
             } else {
                 this.ctx.fillStyle = '#fff'; 
