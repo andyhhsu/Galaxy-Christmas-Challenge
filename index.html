@@ -787,7 +787,8 @@ class Game {
         this.paddle = { w: 100, h: 24, x: this.width/2 - 50, y: paddleY, color: '#00c3ff', state: 'cover' };
         
         // Initial Ball Speed based on level 1
-        const initialBallSpeed = isTouch ? 2.5 : 4.0;
+        // Adjusted lower starting speed for mobile as requested
+        const initialBallSpeed = isTouch ? 2.0 : 4.0;
         this.balls = []; this.balls.push({ x: this.width/2, y: paddleY - 20, r: 8, dx: 0, dy: 0, speed: initialBallSpeed, active: false, prevY: paddleY - 20 });
         this.bricks = []; this.particles = []; this.powerUps = []; this.bullets = [];
         this.aiMode = false; this.spenMode = false; this.gingerbreadMode = false; this.dangerOverlay.classList.remove('danger-pulse');
@@ -910,8 +911,10 @@ class Game {
             
             // 2. Ball Speed: Gradual increase
             const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-            const baseBall = isTouch ? 2.5 : 4.0;
-            const newBallSpeed = baseBall + (effectiveLevel * 0.4);
+            // Lowered base speed and increment for mobile
+            const baseBall = isTouch ? 2.0 : 4.0;
+            const speedInc = isTouch ? 0.25 : 0.4;
+            const newBallSpeed = baseBall + (effectiveLevel * speedInc);
             
             this.balls.forEach(b => b.speed = newBallSpeed);
         }
