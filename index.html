@@ -577,6 +577,7 @@ class SoundManager {
             
             if (this.shouldPlay) {
                 this.bgmEl.volume = 0.4;
+                this.bgmEl.currentTime = 0;
                 const playPromise = this.bgmEl.play();
                 if (playPromise !== undefined) {
                     playPromise.then(() => {
@@ -1008,15 +1009,23 @@ class Game {
         // Fever Timer
         if (this.feverMode) {
             // Drain fever energy over time (5 seconds = 300 frames at 60fps)
+            // 100% / 300 frames = 0.33% per frame. But we use absolute units.
+            // Max energy is 25 (bricks). 
+            // To drain 25 in 5s: 25 / (60*5) = 0.0833 per frame
             this.feverEnergy -= 0.0833; 
             
-            // Gatling logic - BARRAGE
+            // Gatling logic - BARRAGE (Gift Storm)
             if (this.feverType === 'gatling') {
                 if (this.frame % 5 === 0) { // Fire every 5 frames (faster)
-                    // Shoot 3 bullets with spread
-                    this.bullets.push({ x: this.paddle.x + this.paddle.w/2, y: this.paddle.y, w: 4, h: 10, dx: 0, dy: -15, color: '#ffd700' }); // Center Gold
-                    this.bullets.push({ x: this.paddle.x + this.paddle.w/2 - 10, y: this.paddle.y, w: 4, h: 10, dx: -3, dy: -14, color: '#00ffff' }); // Left Cyan
-                    this.bullets.push({ x: this.paddle.x + this.paddle.w/2 + 10, y: this.paddle.y, w: 4, h: 10, dx: 3, dy: -14, color: '#00ffff' }); // Right Cyan
+                    // Shoot 3 bullets with spread (Gift colors: Red, Green, Gold)
+                    const colors = ['#ff0000', '#00ff00', '#ffd700'];
+                    const c1 = colors[Math.floor(Math.random()*3)];
+                    const c2 = colors[Math.floor(Math.random()*3)];
+                    const c3 = colors[Math.floor(Math.random()*3)];
+
+                    this.bullets.push({ x: this.paddle.x + this.paddle.w/2, y: this.paddle.y, w: 4, h: 10, dx: 0, dy: -15, color: c1 }); // Center
+                    this.bullets.push({ x: this.paddle.x + this.paddle.w/2 - 10, y: this.paddle.y, w: 4, h: 10, dx: -3, dy: -14, color: c2 }); // Left
+                    this.bullets.push({ x: this.paddle.x + this.paddle.w/2 + 10, y: this.paddle.y, w: 4, h: 10, dx: 3, dy: -14, color: c3 }); // Right
                     this.audio.playShoot();
                 }
             }
@@ -1044,7 +1053,9 @@ class Game {
         // Faster spawns at higher levels
         const spawnInterval = Math.max(1000, 4000 - (this.level * 150)); // More aggressive cap at 1s
         if(Date.now() - this.lastBrickSpawnTime > spawnInterval) { 
-            this.spawnBrickRow(); // Use dynamic row count inside
+            // --- Change here: Random rows 1-5 ---
+            const randomRows = Math.floor(Math.random() * 5) + 1;
+            this.spawnBrickRow(randomRows); 
             this.lastBrickSpawnTime = Date.now(); 
         }
         
@@ -1168,7 +1179,7 @@ class Game {
             // Top Collision
             if(ball.dy > 0 && ball.x >= this.paddle.x && ball.x <= this.paddle.x + this.paddle.w) {
                  if (ball.y + ball.r >= this.paddle.y && ball.y - ball.r < this.paddle.y + this.paddle.h) {
-                     hit = true;
+                      hit = true;
                  }
             }
             
@@ -1178,7 +1189,7 @@ class Game {
                      ball.x - ball.r <= this.paddle.x + this.paddle.w &&
                      ball.y + ball.r >= this.paddle.y &&
                      ball.y - ball.r <= this.paddle.y + this.paddle.h) {
-                     hit = true;
+                      hit = true;
                  }
             }
 
@@ -1216,7 +1227,7 @@ class Game {
                    ball.y + ball.r > b.y && 
                    ball.y - ball.r < b.y+b.h) { 
                     
-                    // MULTIBALL SPLIT LOGIC - ON IMPACT
+                    // MULTIBALL SPLIT LOGIC - ON IMPACT (Frost Split)
                     if (this.feverMode && this.feverType === 'multiball' && this.multiballReady) {
                         this.multiballReady = false; // One time split
                         // Spawn 6 balls
@@ -1232,14 +1243,16 @@ class Game {
                                 active: true 
                             });
                         }
-                        this.createFloatText("SPLIT!", ball.x, ball.y);
+                        this.createFloatText("❄️ SPLIT!", ball.x, ball.y);
                         this.audio.playPowerUp(); // Split sound
                     }
 
                     // FEVER MODE CHECK
                     if (this.feverMode && (this.feverType === 'fireball' || this.feverType === 'meteor')) {
                          // Pass through (do nothing to velocity)
-                         this.createParticles(ball.x, ball.y, '#ff4500');
+                         // Fireball (Rudolph) is Red, Meteor (Titan) is White/Blue
+                         let particleColor = this.feverType === 'fireball' ? '#ff0000' : '#f0f8ff';
+                         this.createParticles(ball.x, ball.y, particleColor);
                     } else {
                         ball.dy *= -1; // Normal bounce
                     }
@@ -1284,6 +1297,11 @@ class Game {
                 this.feverMode = true;
                 
                 // --- Random Fever Type Selection ---
+                // Using internal names but mapped to new displays
+                // fireball -> Rudolph
+                // multiball -> Frost Split
+                // gatling -> Gift Storm
+                // meteor -> Titan Snowball
                 const types = ['fireball', 'multiball', 'gatling', 'meteor'];
                 this.feverType = types[Math.floor(Math.random() * types.length)];
                 
@@ -1298,12 +1316,12 @@ class Game {
                 document.getElementById('fever-container').classList.add('fever-active');
                 this.feverText.style.opacity = '1';
                 
-                // Float text for specific type
+                // Float text for specific type (UPDATED CHRISTMAS NAMES)
                 let typeName = "FEVER!";
-                if(this.feverType === 'fireball') typeName = "🔥 FIREBALL!";
-                if(this.feverType === 'multiball') typeName = "🌪️ STORM!";
-                if(this.feverType === 'gatling') typeName = "🔫 GATLING!";
-                if(this.feverType === 'meteor') typeName = "☄️ METEOR!";
+                if(this.feverType === 'fireball') typeName = "🦌 RUDOLPH!";
+                if(this.feverType === 'multiball') typeName = "❄️ FROST SPLIT!";
+                if(this.feverType === 'gatling') typeName = "🎁 GIFT STORM!";
+                if(this.feverType === 'meteor') typeName = "🪐 TITAN SNOW!";
                 
                 this.createFloatText(typeName, this.width/2 - 50, this.height/2);
             }
@@ -1333,10 +1351,21 @@ class Game {
         if (otherThreshold < 0.06) otherThreshold = 0.06; // Fix: Min 5% chance for common items
 
         const isHighScore = this.score >= 1000000;
-
+        
+        // --- Dynamic Black Hole Chance ---
+        let highLevelBlackHoleChance = 0;
+        if (this.score > 500000) {
+            // Increase chance by 1% every 100k points after 500k, max 10%
+            highLevelBlackHoleChance = Math.min(0.1, (this.score - 500000) / 5000000); 
+        }
+        
+        // Priority check for High Score Black Hole
+        if (this.score > 500000 && rand < highLevelBlackHoleChance) {
+             type = 'blackhole';
+        }
         // Logic to include debuffs in the "other" pool
         // 0.000 - 0.005: Gingerbread (if < 1M)
-        if (rand < 0.005) {
+        else if (rand < 0.005) {
             if (!isHighScore) type = 'gingerbread';
         } 
         // 0.005 - 0.010: Nuke (if < 1M)
@@ -1473,28 +1502,69 @@ class Game {
         
         this.drawPaddle(this.paddle.x, this.paddle.y, this.paddle.w, this.paddle.h, this.paddle.state, this.paddle.color);
         
-        // Draw Black Hole if active
+        // Draw Black Hole if active (Galaxy style)
         if (this.blackHoleActive) {
             this.ctx.save();
             this.ctx.translate(this.blackHolePos.x, this.blackHolePos.y);
-            this.ctx.rotate(this.frame * 0.1);
-            // Draw simple spiral or black circle with ring
+            
+            // Draw Spiral Galaxy
+            const time = this.frame * 0.05;
+            const arms = 3;
+            const particles = 30;
+            
+            // Dark center
             this.ctx.beginPath();
-            this.ctx.arc(0, 0, 30, 0, Math.PI * 2);
-            this.ctx.fillStyle = 'black';
+            this.ctx.arc(0, 0, 10, 0, Math.PI * 2);
+            this.ctx.fillStyle = '#000';
             this.ctx.fill();
-            this.ctx.strokeStyle = 'purple';
-            this.ctx.lineWidth = 4;
+
+            // Accretion Disk / Arms
+            for (let i = 0; i < arms; i++) {
+                 for (let j = 0; j < particles; j++) {
+                     const angle = (time * 2) + (Math.PI * 2 / arms) * i + (j * 0.2);
+                     const radius = 10 + j * 1.5;
+                     const x = Math.cos(angle) * radius;
+                     const y = Math.sin(angle) * radius;
+                     
+                     this.ctx.beginPath();
+                     this.ctx.arc(x, y, (particles - j)/10, 0, Math.PI * 2);
+                     // Gradient colors: Purple -> Blue -> White
+                     this.ctx.fillStyle = `hsla(${260 + j * 2}, 80%, 60%, ${1 - j/particles})`;
+                     this.ctx.fill();
+                 }
+            }
+            
+            // Event Horizon Glow
+            this.ctx.beginPath();
+            this.ctx.arc(0, 0, 15, 0, Math.PI*2);
+            this.ctx.strokeStyle = '#4b0082'; // Indigo
+            this.ctx.lineWidth = 2;
             this.ctx.stroke();
+
             this.ctx.restore();
         }
 
         this.balls.forEach(ball => { if(ball.active) { this.ctx.beginPath(); this.ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI*2); 
             // Fever visual change
             if (this.feverMode) {
-                this.ctx.fillStyle = this.feverType === 'fireball' ? '#ff4500' : (this.feverType === 'meteor' ? '#ffd700' : '#00ffff'); 
-                this.ctx.shadowColor = '#ffd700'; 
-                this.ctx.shadowBlur = 20;
+                // Rudolph = Fireball (Red), Titan = Meteor (White), Frost = Multiball (Cyan), Gift = Gatling (Normal ball color)
+                if (this.feverType === 'fireball') {
+                    this.ctx.fillStyle = '#ff0000'; // Red nose
+                    this.ctx.shadowColor = '#8b0000';
+                    this.ctx.shadowBlur = 20;
+                } else if (this.feverType === 'meteor') {
+                    this.ctx.fillStyle = '#f0f8ff'; // Titan Ice White
+                    this.ctx.shadowColor = '#a5f3fc';
+                    this.ctx.shadowBlur = 20;
+                } else if (this.feverType === 'multiball') {
+                    this.ctx.fillStyle = '#00ffff'; // Frost Cyan
+                    this.ctx.shadowColor = '#e0ffff';
+                    this.ctx.shadowBlur = 15;
+                } else {
+                    this.ctx.fillStyle = '#fff'; // Normal for Gatling
+                    this.ctx.shadowColor = '#fff'; 
+                    this.ctx.shadowBlur = 10;
+                }
             } else {
                 this.ctx.fillStyle = '#fff'; 
                 this.ctx.shadowColor = '#fff'; 
@@ -1531,7 +1601,11 @@ class Game {
             if (p.type === 'gingerbread') icon = "🍪";
             this.ctx.fillText(icon, p.x, p.y);
         });
-        this.ctx.fillStyle = '#ffff00'; this.bullets.forEach(b => this.ctx.fillRect(b.x, b.y, b.w, b.h));
+        this.ctx.fillStyle = '#ffff00'; this.bullets.forEach(b => {
+            // Custom bullet color support
+            this.ctx.fillStyle = b.color || '#ffff00';
+            this.ctx.fillRect(b.x, b.y, b.w, b.h);
+        });
         this.particles.forEach(p => { this.ctx.globalAlpha = p.life; this.ctx.fillStyle = p.color; this.ctx.beginPath(); this.ctx.arc(p.x, p.y, 3, 0, Math.PI*2); this.ctx.fill(); this.ctx.globalAlpha = 1; });
     }
 
