@@ -24,6 +24,36 @@
         
         #flash-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; pointer-events: none; z-index: 40; transition: opacity 0.1s; mix-blend-mode: screen; }
         
+        /* Fog Overlay */
+        #fog-overlay { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            background: radial-gradient(circle, transparent 30%, rgba(200, 200, 200, 0.8) 90%);
+            backdrop-filter: blur(4px);
+            opacity: 0; pointer-events: none; z-index: 35; transition: opacity 0.5s; 
+        }
+
+        /* Fever Bar */
+        #fever-container {
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+            width: 80%; height: 8px; background: rgba(255,255,255,0.1);
+            border-radius: 4px; overflow: hidden; z-index: 15; pointer-events: none;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        #fever-fill {
+            width: 0%; height: 100%; background: linear-gradient(90deg, #ff4500, #ffd700);
+            transition: width 0.2s;
+            box-shadow: 0 0 10px #ff4500;
+        }
+        .fever-active #fever-fill {
+            animation: feverPulse 0.5s infinite alternate;
+        }
+        @keyframes feverPulse { from { filter: brightness(1); } to { filter: brightness(1.5); } }
+        #fever-text {
+            position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%);
+            color: #ff4500; font-family: 'Orbitron'; font-weight: 900; font-size: 24px;
+            text-shadow: 0 0 10px #ffd700; opacity: 0; pointer-events: none; transition: opacity 0.2s; z-index: 16; letter-spacing: 2px;
+        }
+
         @keyframes shake {
             0% { transform: translate(0, 0) rotate(0deg); }
             10% { transform: translate(-5px, -5px) rotate(-1deg); }
@@ -154,6 +184,7 @@
         <canvas id="gameCanvas"></canvas>
         <div id="danger-overlay"></div>
         <div id="flash-overlay"></div>
+        <div id="fog-overlay"></div>
 
         <!-- Combo Display (Hidden by default) -->
         <div id="combo-hud" class="hidden">
@@ -166,6 +197,12 @@
             <div class="level-label">LEVEL</div>
             <div class="level-value" id="levelVal">1</div>
         </div>
+
+        <!-- Fever Bar -->
+        <div id="fever-container">
+            <div id="fever-fill"></div>
+        </div>
+        <div id="fever-text">FEVER</div>
 
         <!-- HUD -->
         <div id="hud">
@@ -598,6 +635,8 @@ class SoundManager {
     playNuke() { this.playTone(100, 'sawtooth', 1.0, 50); }
     playLevelUp() { this.playTone(600, 'sine', 0.1, 1200); setTimeout(() => this.playTone(800, 'sine', 0.3, 1600), 100); }
     playGameOver() { this.playTone(300, 'sawtooth', 1.5, 50); }
+    playDebuff() { this.playTone(150, 'sawtooth', 0.5, 50); } // Lower pitch sound for debuffs
+    playFever() { this.playTone(800, 'square', 0.5, 1200); } // Higher energy sound
 }
 
 class Game {
@@ -616,6 +655,10 @@ class Game {
         this.modeIndicator = document.getElementById('mode-indicator');
         this.dangerOverlay = document.getElementById('danger-overlay');
         this.flashOverlay = document.getElementById('flash-overlay');
+        this.fogOverlay = document.getElementById('fog-overlay');
+        this.feverFill = document.getElementById('fever-fill');
+        this.feverText = document.getElementById('fever-text');
+        
         this.particles = []; this.initParticles();
         
         this.bgImage = new Image();
@@ -776,6 +819,16 @@ class Game {
             comboVal.parentElement.classList.remove('combo-pulse');
         }
         
+        // Reset Fever & Fog
+        this.feverEnergy = 0;
+        this.feverMode = false;
+        this.feverMax = 25; // Bricks needed to trigger fever
+        this.fogActive = false;
+        this.fogOverlay.style.opacity = '0';
+        this.feverFill.style.width = '0%';
+        this.feverText.style.opacity = '0';
+        document.getElementById('fever-container').classList.remove('fever-active');
+        
         this.difficultyLevel = 1; this.lastBrickSpawnTime = 0; this.lastShotTime = 0;
         
         // Initial Speeds
@@ -861,11 +914,25 @@ class Game {
     }
 
     spawnBrickRow(count = 1, startY = null) {
+        // --- Randomize rows between 1 and 5 ---
+        const randomRows = Math.floor(Math.random() * 5) + 1;
+        const rowsToSpawn = count === 4 ? randomRows : count; // Override if it was the initial call, or simplify to just use randomRows if intended for all spawns. 
+        // Let's assume user wants all spawns to be random 1-5.
+        // But wait, the initial spawn was 4. The update loop spawned 3.
+        // I will use random 1-5 for the update loop spawn.
+        
+        // Actually, let's just use randomRows here to be safe for "dynamic" feel.
+        // But for the initial `spawnBrickRowSafe` call which passes 4, maybe we want to respect that?
+        // The prompt asked "方塊生成的排數 可以改為隨機嗎 (1~5)".
+        // I'll apply it generally.
+        
+        const finalCount = (arguments.length > 0 && count !== 3 && count !== 4) ? count : (Math.floor(Math.random() * 5) + 1);
+
         const cols = Math.floor(this.width / 60); 
         if(cols <= 0) return; 
         
         const offset = (this.width - (cols * 55)) / 2;
-        for(let r=0; r<count; r++) {
+        for(let r=0; r<finalCount; r++) {
             for(let c=0; c<cols; c++) {
                 if(Math.random() > 0.85) continue; 
                 const types = ['#00c3ff', '#0062cc', '#7c3aed', '#ffffff']; const color = types[Math.floor(Math.random() * types.length)];
@@ -916,7 +983,16 @@ class Game {
             const speedInc = isTouch ? 0.15 : 0.4; // Reduced from 0.25
             const newBallSpeed = baseBall + (effectiveLevel * speedInc);
             
-            this.balls.forEach(b => b.speed = newBallSpeed);
+            // Scale current balls to match new speed immediately
+            this.balls.forEach(b => {
+                // Calculate current direction
+                const currentSpeed = Math.sqrt(b.dx*b.dx + b.dy*b.dy);
+                if (currentSpeed > 0) {
+                    b.dx = (b.dx / currentSpeed) * newBallSpeed;
+                    b.dy = (b.dy / currentSpeed) * newBallSpeed;
+                }
+                b.speed = newBallSpeed;
+            });
         }
     }
 
@@ -924,13 +1000,34 @@ class Game {
         // Run Level Check
         this.updateLevel();
         
+        // Fever Timer
+        if (this.feverMode) {
+            // Drain fever energy over time (5 seconds = 300 frames at 60fps)
+            // 100% / 300 frames = 0.33% per frame. But we use absolute units.
+            // Max energy is 25 (bricks). 
+            // To drain 25 in 5s: 25 / (60*5) = 0.0833 per frame
+            this.feverEnergy -= 0.0833; 
+            
+            if (this.feverEnergy <= 0) {
+                this.feverMode = false;
+                this.feverEnergy = 0;
+                document.getElementById('fever-container').classList.remove('fever-active');
+                this.feverText.style.opacity = '0';
+            }
+            // Update UI
+            const pct = Math.min(100, (this.feverEnergy / this.feverMax) * 100);
+            this.feverFill.style.width = pct + '%';
+        }
+
         this.bgParticles.forEach(p => { p.y += p.speed; if(p.y > this.height) { p.y = -5; p.x = Math.random() * this.width; } });
         
         // Spawn Bricks Logic (tied to level)
         // Faster spawns at higher levels
         const spawnInterval = Math.max(2000, 4000 - (this.level * 100));
         if(Date.now() - this.lastBrickSpawnTime > spawnInterval) { 
-            this.spawnBrickRow(3); // Spawn 3 rows at a time
+            // --- Change here: Random rows 1-5 ---
+            const randomRows = Math.floor(Math.random() * 5) + 1;
+            this.spawnBrickRow(randomRows); 
             this.lastBrickSpawnTime = Date.now(); 
         }
         
@@ -1030,17 +1127,43 @@ class Game {
 
             if(hit) { 
                 ball.y = this.paddle.y - ball.r - 1; 
-                ball.dy = -Math.abs(ball.speed); // Reflect based on current speed
                 
+                // --- Fix: Normalize reflection vector to maintain constant speed ---
                 let hitPoint = ball.x - (this.paddle.x + this.paddle.w/2); 
-                hitPoint = hitPoint / (this.paddle.w / 2);
-                ball.dx = hitPoint * 8 + (Math.random() - 0.5); 
-                if (Math.abs(ball.dx) < 2) ball.dx = (ball.dx >= 0 ? 1 : -1) * 3; 
+                // Normalize hit point (-1 to 1)
+                let normalizedHit = hitPoint / (this.paddle.w / 2);
+                
+                // Clamp hit point to avoid extreme angles
+                if (normalizedHit > 1) normalizedHit = 1;
+                if (normalizedHit < -1) normalizedHit = -1;
+
+                // Calculate bounce angle (max 60 degrees = PI/3)
+                let bounceAngle = normalizedHit * (Math.PI / 3); 
+
+                // Update velocity maintaining speed magnitude
+                // Note: sin(0) is 0 (straight up), so x depends on sin, y depends on cos.
+                // Since y is up (negative), we use -cos.
+                ball.dx = ball.speed * Math.sin(bounceAngle);
+                ball.dy = -ball.speed * Math.cos(bounceAngle);
                 
                 this.audio.playPaddle(); 
                 this.createParticles(ball.x, ball.y, '#fff'); 
             }
-            this.bricks.forEach(b => { if(b.status === 1 && ball.x > b.x && ball.x < b.x+b.w && ball.y > b.y && ball.y < b.y+b.h) { ball.dy *= -1; this.destroyBrick(b); } });
+            
+            // Collision Check for Bricks
+            this.bricks.forEach(b => { 
+                if(b.status === 1 && ball.x > b.x && ball.x < b.x+b.w && ball.y > b.y && ball.y < b.y+b.h) { 
+                    // FEVER MODE CHECK
+                    if (!this.feverMode) {
+                        ball.dy *= -1; // Normal bounce
+                    } else {
+                        // Pass through (do nothing to velocity)
+                        // Maybe create extra particles
+                        this.createParticles(ball.x, ball.y, '#ff4500');
+                    }
+                    this.destroyBrick(b); 
+                } 
+            });
         });
 
         this.powerUps.forEach((p, i) => { p.y += 3; if(p.y + 15 > this.paddle.y && p.y - 15 < this.paddle.y + this.paddle.h && p.x > this.paddle.x && p.x < this.paddle.x + this.paddle.w) { this.activatePowerUp(p.type); this.powerUps.splice(i, 1); } if(p.y > this.height) this.powerUps.splice(i, 1); });
@@ -1056,6 +1179,21 @@ class Game {
         const bonusMultiplier = 1 + (this.combo * 0.1); // 1.1, 1.2 ...
         const points = Math.floor(100 * bonusMultiplier);
         this.score += points;
+        
+        // Fever Energy Accumulation
+        if (!this.feverMode) {
+            this.feverEnergy += 1; // +1 energy per brick
+            const pct = Math.min(100, (this.feverEnergy / this.feverMax) * 100);
+            this.feverFill.style.width = pct + '%';
+            
+            if (this.feverEnergy >= this.feverMax) {
+                this.feverMode = true;
+                this.audio.playFever();
+                document.getElementById('fever-container').classList.add('fever-active');
+                this.feverText.style.opacity = '1';
+                this.createFloatText("FEVER!", this.width/2 - 30, this.height/2);
+            }
+        }
         
         // Update HUD
         this.hudScore.innerText = this.score; 
@@ -1082,15 +1220,28 @@ class Game {
 
         const isHighScore = this.score >= 1000000;
 
+        // Logic to include debuffs in the "other" pool
+        // 0.000 - 0.005: Gingerbread (if < 1M)
         if (rand < 0.005) {
             if (!isHighScore) type = 'gingerbread';
         } 
+        // 0.005 - 0.010: Nuke (if < 1M)
         else if (rand < 0.01) {
              if (!isHighScore) type = 'nuke';
         }
+        // 0.010 - Threshold: Others
         else if (rand < otherThreshold) {
+             // Sub-random for type selection
              const r = Math.random();
-             if (r < 0.25) type = 'multiball';
+             // 10% chance for Debuffs
+             if (r < 0.10) {
+                 type = Math.random() > 0.5 ? 'shrink' : 'fog';
+             }
+             // 20% chance for Multiball
+             else if (r < 0.30) {
+                 type = 'multiball';
+             }
+             // Rest for buffs
              else {
                  const commonTypes = ['expand', 'spen', 'ai'];
                  type = commonTypes[Math.floor(Math.random() * commonTypes.length)];
@@ -1100,10 +1251,42 @@ class Game {
         if (type) this.powerUps.push({ x: b.x + b.w/2, y: b.y, type: type });
     }
     activatePowerUp(type) {
-        this.audio.playPowerUp(); this.createFloatText(type.toUpperCase(), this.paddle.x, this.paddle.y - 50); gtag('event', 'power_up', { 'type': type });
+        // Play sound logic - check for debuff
+        if (type === 'shrink' || type === 'fog') {
+            this.audio.playDebuff();
+        } else {
+            this.audio.playPowerUp();
+        }
+        
+        // Icons mapping for text
+        let iconMap = {
+            'expand': '📱', 'spen': '🖊️', 'ai': '❄️', 'nuke': '🎁', 
+            'multiball': '🔴', 'gingerbread': '🍪',
+            'shrink': '🤏', 'fog': '🌫️'
+        };
+        
+        this.createFloatText(iconMap[type] || type.toUpperCase(), this.paddle.x, this.paddle.y - 50); 
+        gtag('event', 'power_up', { 'type': type });
         var self = this;
         
-        if (type === 'gingerbread') {
+        // Logic
+        if (type === 'shrink') {
+            this.paddle.w = 60; // Shrink width
+            this.paddle.color = '#ff4500'; // Red warning color
+            setTimeout(() => {
+                this.paddle.w = 100; // Restore
+                this.paddle.color = '#00c3ff'; 
+            }, 5000);
+        }
+        else if (type === 'fog') {
+            this.fogActive = true;
+            this.fogOverlay.style.opacity = '1';
+            setTimeout(() => {
+                this.fogActive = false;
+                this.fogOverlay.style.opacity = '0';
+            }, 5000);
+        }
+        else if (type === 'gingerbread') {
              this.gingerbreadMode = true;
              setTimeout(() => {
                  this.gingerbreadMode = false;
@@ -1168,14 +1351,44 @@ class Game {
         
         this.drawPaddle(this.paddle.x, this.paddle.y, this.paddle.w, this.paddle.h, this.paddle.state, this.paddle.color);
 
-        this.balls.forEach(ball => { if(ball.active) { this.ctx.beginPath(); this.ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI*2); this.ctx.fillStyle = '#fff'; this.ctx.fill(); this.ctx.shadowBlur = 10; this.ctx.shadowColor = '#fff'; this.ctx.fill(); this.ctx.shadowBlur = 0; } });
+        this.balls.forEach(ball => { if(ball.active) { this.ctx.beginPath(); this.ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI*2); 
+            // Fever visual change
+            if (this.feverMode) {
+                this.ctx.fillStyle = '#ff4500'; // Red/Orange ball
+                this.ctx.shadowColor = '#ffd700'; // Gold glow
+                this.ctx.shadowBlur = 20;
+            } else {
+                this.ctx.fillStyle = '#fff'; 
+                this.ctx.shadowColor = '#fff'; 
+                this.ctx.shadowBlur = 10;
+            }
+            this.ctx.fill(); 
+            this.ctx.fill(); 
+            this.ctx.shadowBlur = 0; 
+        } });
+        
         this.bricks.forEach(b => { this.ctx.fillStyle = b.color; this.ctx.fillRect(b.x, b.y, b.w, b.h); this.ctx.fillStyle = 'rgba(255,255,255,0.2)'; this.ctx.fillRect(b.x, b.y, b.w, b.h/2); });
         this.powerUps.forEach(p => {
             this.ctx.beginPath(); this.ctx.arc(p.x, p.y - 5, 20, 0, Math.PI*2); this.ctx.fillStyle = 'rgba(0,0,0,0.5)'; this.ctx.fill();
-            let strokeColor = '#fff'; if (p.type === 'nuke') strokeColor = '#ef4444'; else if (p.type === 'multiball') strokeColor = '#22c55e'; else if (p.type === 'expand') strokeColor = '#00c3ff'; else if (p.type === 'spen') strokeColor = '#ffff00'; else if (p.type === 'ai') strokeColor = '#ff00ff';
+            let strokeColor = '#fff'; 
+            if (p.type === 'nuke') strokeColor = '#ef4444'; 
+            else if (p.type === 'shrink' || p.type === 'fog') strokeColor = '#ff0000'; // Debuffs
+            else if (p.type === 'multiball') strokeColor = '#22c55e'; 
+            else if (p.type === 'expand') strokeColor = '#00c3ff'; 
+            else if (p.type === 'spen') strokeColor = '#ffff00'; 
+            else if (p.type === 'ai') strokeColor = '#ff00ff';
+            
             this.ctx.lineWidth = 2; this.ctx.strokeStyle = strokeColor; this.ctx.stroke();
             this.ctx.font = "24px Arial"; this.ctx.textAlign = "center"; this.ctx.fillStyle = "#fff";
-            let icon = "?"; if(p.type === 'expand') icon = "📱"; else if(p.type === 'spen') icon = "🖊️"; else if(p.type === 'ai') icon = "❄️"; else if(p.type === 'nuke') icon = "🎁"; else if(p.type === 'multiball') icon = "🔴";
+            let icon = "?"; 
+            if(p.type === 'expand') icon = "📱"; 
+            else if(p.type === 'spen') icon = "🖊️"; 
+            else if(p.type === 'ai') icon = "❄️"; 
+            else if(p.type === 'nuke') icon = "🎁"; 
+            else if(p.type === 'multiball') icon = "🔴";
+            else if(p.type === 'shrink') icon = "🤏";
+            else if(p.type === 'fog') icon = "🌫️";
+            
             if (p.type === 'gingerbread') icon = "🍪";
             this.ctx.fillText(icon, p.x, p.y);
         });
