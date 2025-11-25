@@ -923,16 +923,13 @@ class Game {
         // --- Randomize rows between 1 and 5 ---
         const randomRows = Math.floor(Math.random() * 5) + 1;
         const rowsToSpawn = count === 4 ? randomRows : count; // Override if it was the initial call, or simplify to just use randomRows if intended for all spawns. 
-        // Let's assume user wants all spawns to be random 1-5.
-        // But wait, the initial spawn was 4. The update loop spawned 3.
-        // I will use random 1-5 for the update loop spawn.
         
-        // Actually, let's just use randomRows here to be safe for "dynamic" feel.
-        // But for the initial `spawnBrickRowSafe` call which passes 4, maybe we want to respect that?
-        // The prompt asked "方塊生成的排數 可以改為隨機嗎 (1~5)".
-        // I'll apply it generally.
+        // Dynamic min rows based on level for density
+        let finalCount = (arguments.length > 0 && count !== 3 && count !== 4) ? count : (Math.floor(Math.random() * 5) + 1);
         
-        const finalCount = (arguments.length > 0 && count !== 3 && count !== 4) ? count : (Math.floor(Math.random() * 5) + 1);
+        // Force higher density at high levels
+        if (this.level >= 10) finalCount = Math.max(finalCount, 2);
+        if (this.level >= 20) finalCount = Math.max(finalCount, 3);
 
         const cols = Math.floor(this.width / 60); 
         if(cols <= 0) return; 
@@ -1011,9 +1008,6 @@ class Game {
         // Fever Timer
         if (this.feverMode) {
             // Drain fever energy over time (5 seconds = 300 frames at 60fps)
-            // 100% / 300 frames = 0.33% per frame. But we use absolute units.
-            // Max energy is 25 (bricks). 
-            // To drain 25 in 5s: 25 / (60*5) = 0.0833 per frame
             this.feverEnergy -= 0.0833; 
             
             // Gatling logic - BARRAGE
@@ -1048,11 +1042,9 @@ class Game {
         
         // Spawn Bricks Logic (tied to level)
         // Faster spawns at higher levels
-        const spawnInterval = Math.max(2000, 4000 - (this.level * 100));
+        const spawnInterval = Math.max(1000, 4000 - (this.level * 150)); // More aggressive cap at 1s
         if(Date.now() - this.lastBrickSpawnTime > spawnInterval) { 
-            // --- Change here: Random rows 1-5 ---
-            const randomRows = Math.floor(Math.random() * 5) + 1;
-            this.spawnBrickRow(randomRows); 
+            this.spawnBrickRow(); // Use dynamic row count inside
             this.lastBrickSpawnTime = Date.now(); 
         }
         
@@ -1102,8 +1094,6 @@ class Game {
         
         // Update Black Hole Logic
         if (this.blackHoleActive) {
-            // Draw/Update Black Hole Animation state if needed
-            // Move all balls towards black hole
             this.balls.forEach(b => {
                 let dx = this.blackHolePos.x - b.x;
                 let dy = this.blackHolePos.y - b.y;
@@ -1132,13 +1122,24 @@ class Game {
             let moveSpeed = ball.speed * (this.aiMode ? 0.6 : 1);
 
             // Fix: Prevent vertical locking
-            if (Math.abs(ball.dx) < 1.5) {
-                 ball.dx = (ball.dx >= 0 ? 1 : -1) * 2.0;
+            // Ensure dx is at least 20% of total speed
+            const minDx = ball.speed * 0.2;
+            if (Math.abs(ball.dx) < minDx) {
+                 let sign = ball.dx >= 0 ? 1 : -1;
+                 ball.dx = sign * minDx;
+                 // Adjust dy to maintain speed
+                 let dySign = ball.dy >= 0 ? 1 : -1;
+                 ball.dy = dySign * Math.sqrt(ball.speed * ball.speed - ball.dx * ball.dx);
             }
 
             // Fix: Prevent horizontal locking
-            if (Math.abs(ball.dy) < 1.0) {
-                 ball.dy = (ball.dy >= 0 ? 1 : -1) * 1.5;
+            const minDy = ball.speed * 0.2;
+            if (Math.abs(ball.dy) < minDy) {
+                 let sign = ball.dy >= 0 ? 1 : -1;
+                 ball.dy = sign * minDy;
+                 // Adjust dx
+                 let dxSign = ball.dx >= 0 ? 1 : -1;
+                 ball.dx = dxSign * Math.sqrt(ball.speed * ball.speed - ball.dy * ball.dy);
             }
 
             ball.prevY = ball.y; 
