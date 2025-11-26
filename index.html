@@ -874,9 +874,8 @@ class Game {
         this.paddle = { w: 100, h: 24, x: this.width/2 - 50, y: paddleY, color: '#00c3ff', state: 'cover' };
         
         // Initial Ball Speed based on level 1
-        // Adjusted lower starting speed for mobile as requested
-        // FIX: Boosted mobile base speed to feel faster at start
-        const initialBallSpeed = isTouch ? 2.0 : 4.0; // Increased from 1.5
+        // FIX: Reset to slightly slower start, but allow aggressive scaling
+        const initialBallSpeed = isTouch ? 1.5 : 3.0; 
         this.balls = []; this.balls.push({ x: this.width/2, y: paddleY - 20, r: 8, dx: 0, dy: 0, speed: initialBallSpeed, active: false, prevY: paddleY - 20 });
         this.bricks = []; this.particles = []; this.powerUps = []; this.bullets = [];
         this.aiMode = false; this.spenMode = false; this.gingerbreadMode = false; this.dangerOverlay.classList.remove('danger-pulse');
@@ -1018,10 +1017,13 @@ class Game {
             
             // 2. Ball Speed: Gradual increase
             const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-            // Lowered base speed and increment for mobile
-            // FIX: Increased mobile base speed and increment to make speed up noticeable
-            const baseBall = isTouch ? 2.0 : 4.0; // Increased base from 1.5 to 2.0
-            const speedInc = isTouch ? 0.2 : 0.2; // Increased mobile increment to 0.2
+            
+            // FIX: Adjusted Curve
+            // Start slower (1.5 mobile / 3.0 PC)
+            // Scale faster (0.35 mobile / 0.6 PC per level)
+            const baseBall = isTouch ? 1.5 : 3.0; 
+            const speedInc = isTouch ? 0.35 : 0.6; 
+            
             const newBallSpeed = baseBall + (effectiveLevel * speedInc);
             
             // Scale current balls to match new speed immediately
@@ -1477,10 +1479,6 @@ class Game {
         // UPDATED: 200k instead of 500k
         if (this.score > 200000 && rand < highLevelBlackHoleChance) {
              type = 'blackhole';
-        }
-        // NEW: Help player after 200k with Width Expand
-        else if (this.score > 200000 && rand < highLevelBlackHoleChance + 0.05) {
-             type = 'expand';
         }
         // Logic to include debuffs in the "other" pool
         
