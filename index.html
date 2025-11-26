@@ -15,8 +15,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Noto+Sans+TC:wght@300;400;700&display=swap');
-        body { margin: 0; background-color: #000; font-family: 'Noto Sans TC', sans-serif; overflow: hidden; touch-action: none; user-select: none; display: flex; justify-content: center; align-items: center; height: 100vh; }
-        #game-wrapper { position: relative; width: 100%; height: 100%; max-width: 500px; background: radial-gradient(circle at 50% 120%, #0a1a3a 0%, #000000 80%); overflow: hidden; box-shadow: 0 0 50px rgba(0,0,0,0.8); }
+        /* FIX: Use fixed positioning and 100dvh to handle mobile browser bars */
+        body { margin: 0; background-color: #000; font-family: 'Noto Sans TC', sans-serif; overflow: hidden; touch-action: none; user-select: none; width: 100%; height: 100dvh; position: fixed; top: 0; left: 0; }
+        #game-wrapper { position: relative; width: 100%; height: 100%; max-width: 500px; margin: 0 auto; background: radial-gradient(circle at 50% 120%, #0a1a3a 0%, #000000 80%); overflow: hidden; box-shadow: 0 0 50px rgba(0,0,0,0.8); }
         canvas { display: block; width: 100%; height: 100%; }
         #danger-overlay { position: absolute; bottom: 0; left: 0; width: 100%; height: 20%; background: linear-gradient(to top, rgba(255, 0, 50, 0.3), transparent); pointer-events: none; opacity: 0; transition: opacity 0.3s; z-index: 5; }
         .danger-pulse { animation: pulseRed 1s infinite alternate; }
@@ -56,9 +57,9 @@
         .level-label { font-size: 10px; color: #aaa; letter-spacing: 1px; font-family: 'Orbitron'; }
         .level-value { font-family: 'Orbitron', sans-serif; font-size: 18px; color: #fff; font-weight: bold; }
 
-        /* Fever Bar */
+        /* Fever Bar - FIX: Moved up to account for safe areas */
         #fever-container {
-            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+            position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%);
             width: 80%; height: 8px; background: rgba(255,255,255,0.1);
             border-radius: 4px; overflow: hidden; z-index: 15; pointer-events: none;
             border: 1px solid rgba(255,255,255,0.2);
@@ -72,8 +73,10 @@
             animation: feverPulse 0.5s infinite alternate;
         }
         @keyframes feverPulse { from { filter: brightness(1); } to { filter: brightness(1.5); } }
+        
+        /* Fever Text - FIX: Moved up */
         #fever-text {
-            position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%);
+            position: absolute; bottom: 65px; left: 50%; transform: translateX(-50%);
             color: #ff4500; font-family: 'Orbitron'; font-weight: 900; font-size: 24px;
             text-shadow: 0 0 10px #ffd700; opacity: 0; pointer-events: none; transition: opacity 0.2s; z-index: 16; letter-spacing: 2px; width: 100%; text-align: center;
         }
@@ -1479,6 +1482,10 @@ class Game {
         // UPDATED: 200k instead of 500k
         if (this.score > 200000 && rand < highLevelBlackHoleChance) {
              type = 'blackhole';
+        }
+        // NEW: Help player after 200k with Width Expand
+        else if (this.score > 200000 && rand < highLevelBlackHoleChance + 0.05) {
+             type = 'expand';
         }
         // Logic to include debuffs in the "other" pool
         
