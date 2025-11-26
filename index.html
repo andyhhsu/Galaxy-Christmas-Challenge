@@ -873,7 +873,8 @@ class Game {
         
         // Initial Ball Speed based on level 1
         // Adjusted lower starting speed for mobile as requested
-        const initialBallSpeed = isTouch ? 1.5 : 4.0; // Reduced from 2.0
+        // FIX: Boosted mobile base speed to feel faster at start
+        const initialBallSpeed = isTouch ? 2.0 : 4.0; // Increased from 1.5
         this.balls = []; this.balls.push({ x: this.width/2, y: paddleY - 20, r: 8, dx: 0, dy: 0, speed: initialBallSpeed, active: false, prevY: paddleY - 20 });
         this.bricks = []; this.particles = []; this.powerUps = []; this.bullets = [];
         this.aiMode = false; this.spenMode = false; this.gingerbreadMode = false; this.dangerOverlay.classList.remove('danger-pulse');
@@ -1015,8 +1016,9 @@ class Game {
             // 2. Ball Speed: Gradual increase
             const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
             // Lowered base speed and increment for mobile
-            const baseBall = isTouch ? 1.5 : 4.0; // Reduced from 2.0
-            const speedInc = isTouch ? 0.1 : 0.2; // Reduced from 0.15 / 0.4
+            // FIX: Increased mobile base speed and increment to make speed up noticeable
+            const baseBall = isTouch ? 2.0 : 4.0; // Increased base from 1.5 to 2.0
+            const speedInc = isTouch ? 0.2 : 0.2; // Increased mobile increment to 0.2
             const newBallSpeed = baseBall + (effectiveLevel * speedInc);
             
             // Scale current balls to match new speed immediately
@@ -1472,6 +1474,10 @@ class Game {
         if (this.score > 200000 && rand < highLevelBlackHoleChance) {
              type = 'blackhole';
         }
+        // NEW: Help player after 200k with Width Expand
+        else if (this.score > 200000 && rand < highLevelBlackHoleChance + 0.05) {
+             type = 'expand';
+        }
         // Logic to include debuffs in the "other" pool
         
         // 0.000 - 0.005: Gingerbread (0.5%)
@@ -1562,12 +1568,11 @@ class Game {
         }
         else if (type === 'gingerbread') {
              this.gingerbreadMode = true;
-             this.paddle.w = this.width / 2; // Scheme A: Half screen width
+             // Removed width change
              setTimeout(() => {
                  this.gingerbreadMode = false;
-                 this.paddle.w = 100; 
-                 this.paddle.state = 'cover';
-             }, 3000);
+                 // Removed width reset
+             }, 5000);
         }
         else if (type === 'nuke') { 
             this.audio.playNuke(); 
