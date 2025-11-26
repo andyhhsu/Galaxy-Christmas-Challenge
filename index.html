@@ -1064,10 +1064,11 @@ class Game {
             // FIX: Adjusted Curve as requested
             // Start slower (1.7 mobile / 4.0 PC)
             // Scale smoother (0.22 mobile per level)
-            // Cap at 5.0 Mobile / 12.0 PC
             const baseBall = isTouch ? 1.7 : 4.0; 
             const speedInc = isTouch ? 0.22 : 0.6; 
-            const maxSpeed = isTouch ? 5.0 : 12.0;
+            
+            // Cap at 4.0 Mobile / 10.0 PC
+            const maxSpeed = isTouch ? 4.0 : 10.0;
             
             let newBallSpeed = baseBall + (effectiveLevel * speedInc);
             newBallSpeed = Math.min(newBallSpeed, maxSpeed); // Hard Cap
