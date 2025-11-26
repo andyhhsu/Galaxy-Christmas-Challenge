@@ -875,8 +875,8 @@ class Game {
         this.paddle = { w: 100, h: 24, x: this.width/2 - 50, y: paddleY, color: '#00c3ff', state: 'cover' };
         
         // Initial Ball Speed based on level 1
-        // Using the agreed upon 3.0 start for mobile
-        const initialBallSpeed = isTouch ? 3.0 : 4.0; 
+        // Using the agreed upon 1.7 start for mobile (User request: 1.7)
+        const initialBallSpeed = isTouch ? 1.7 : 4.0; 
         this.balls = []; this.balls.push({ x: this.width/2, y: paddleY - 20, r: 8, dx: 0, dy: 0, speed: initialBallSpeed, active: false, prevY: paddleY - 20 });
         this.bricks = []; this.particles = []; this.powerUps = []; this.bullets = [];
         this.aiMode = false; this.spenMode = false; this.gingerbreadMode = false; this.dangerOverlay.classList.remove('danger-pulse');
@@ -952,12 +952,13 @@ class Game {
     }
 
     spawnBrickRow(count = 1, startY = null) {
-        // --- Randomize rows between 1 and 4 (MAX 4) ---
-        const randomRows = Math.floor(Math.random() * 4) + 1;
+        // --- Plan B: Randomize rows between 2 and 4 (MIN 2, MAX 4) ---
+        // Ensure at least 2 rows are spawned to avoid emptiness
+        const randomRows = Math.floor(Math.random() * 3) + 2;
         const rowsToSpawn = count === 4 ? randomRows : count; 
         
         // Dynamic min rows based on level for density
-        let finalCount = (arguments.length > 0 && count !== 3 && count !== 4) ? count : (Math.floor(Math.random() * 4) + 1);
+        let finalCount = (arguments.length > 0 && count !== 3 && count !== 4) ? count : (Math.floor(Math.random() * 3) + 2);
         
         // Force higher density at high levels
         if (this.level >= 10) finalCount = Math.max(finalCount, 2);
@@ -1018,10 +1019,10 @@ class Game {
             const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
             
             // FIX: Adjusted Curve as requested
-            // Start faster (3.0 mobile)
+            // Start slower (1.7 mobile / 4.0 PC)
             // Scale smoother (0.2 mobile per level)
             // Cap at 9.0
-            const baseBall = isTouch ? 3.0 : 4.0; 
+            const baseBall = isTouch ? 1.7 : 4.0; 
             const speedInc = isTouch ? 0.2 : 0.6; 
             
             let newBallSpeed = baseBall + (effectiveLevel * speedInc);
@@ -1141,12 +1142,12 @@ class Game {
         });
         
         // Spawn Bricks Logic (tied to level)
-        // Faster spawns at higher levels
-        // FIX: Reduced base interval from 4000 to 3500, and increased reduction per level
-        const spawnInterval = Math.max(800, 3500 - (this.level * 200)); 
+        // Plan A: Initial 3500ms, Floor 2000ms
+        // Reduce 100ms per level
+        const spawnInterval = Math.max(2000, 3500 - (this.level * 100)); 
         if(Date.now() - this.lastBrickSpawnTime > spawnInterval) { 
-            // --- Change here: Random rows 1-4 (MAX 4) ---
-            const randomRows = Math.floor(Math.random() * 4) + 1;
+            // --- Plan B: Random rows 2-4 ---
+            const randomRows = Math.floor(Math.random() * 3) + 2;
             this.spawnBrickRow(randomRows); 
             this.lastBrickSpawnTime = Date.now(); 
         }
