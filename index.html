@@ -15,10 +15,26 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Noto+Sans+TC:wght@300;400;700&display=swap');
-        /* FIX: Use fixed positioning and 100dvh to handle mobile browser bars */
-        body { margin: 0; background-color: #000; font-family: 'Noto Sans TC', sans-serif; overflow: hidden; touch-action: none; user-select: none; width: 100%; height: 100dvh; position: fixed; top: 0; left: 0; }
+        
+        /* 預設：適用於電腦與大型看板 (回歸穩定版) */
+        body { 
+            margin: 0; 
+            background-color: #000; 
+            font-family: 'Noto Sans TC', sans-serif; 
+            overflow: hidden; 
+            touch-action: none; 
+            user-select: none; 
+            width: 100%; 
+            height: 100vh;       /* 標準高度 */
+            position: relative;  /* 標準定位 */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
         #game-wrapper { position: relative; width: 100%; height: 100%; max-width: 500px; margin: 0 auto; background: radial-gradient(circle at 50% 120%, #0a1a3a 0%, #000000 80%); overflow: hidden; box-shadow: 0 0 50px rgba(0,0,0,0.8); }
         canvas { display: block; width: 100%; height: 100%; }
+        
         #danger-overlay { position: absolute; bottom: 0; left: 0; width: 100%; height: 20%; background: linear-gradient(to top, rgba(255, 0, 50, 0.3), transparent); pointer-events: none; opacity: 0; transition: opacity 0.3s; z-index: 5; }
         .danger-pulse { animation: pulseRed 1s infinite alternate; }
         @keyframes pulseRed { from { opacity: 0.1; } to { opacity: 0.4; } }
@@ -43,6 +59,7 @@
         .ui-layer.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
         .modal-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.95); z-index: 60; display: flex; flex-direction: column; align-items: center; padding-top: 60px; transition: transform 0.4s cubic-bezier(0.19, 1, 0.22, 1); transform: translateY(100%); }
         .modal-layer.active { transform: translateY(0); }
+        
         #hud { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); padding: 8px 20px; display: flex; flex-direction: column; align-items: center; pointer-events: none; z-index: 10; background: rgba(0,0,0,0.5); border-radius: 20px; border: 1px solid rgba(0, 195, 255, 0.3); backdrop-filter: blur(4px); }
         
         /* Combo HUD */
@@ -57,9 +74,9 @@
         .level-label { font-size: 10px; color: #aaa; letter-spacing: 1px; font-family: 'Orbitron'; }
         .level-value { font-family: 'Orbitron', sans-serif; font-size: 18px; color: #fff; font-weight: bold; }
 
-        /* Fever Bar - FIX: Moved up to account for safe areas */
+        /* Fever Bar - Default Position (Desktop/Large Screen) */
         #fever-container {
-            position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%);
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
             width: 80%; height: 8px; background: rgba(255,255,255,0.1);
             border-radius: 4px; overflow: hidden; z-index: 15; pointer-events: none;
             border: 1px solid rgba(255,255,255,0.2);
@@ -74,11 +91,29 @@
         }
         @keyframes feverPulse { from { filter: brightness(1); } to { filter: brightness(1.5); } }
         
-        /* Fever Text - FIX: Moved up */
+        /* Fever Text - Default Position (Desktop/Large Screen) */
         #fever-text {
-            position: absolute; bottom: 65px; left: 50%; transform: translateX(-50%);
+            position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%);
             color: #ff4500; font-family: 'Orbitron'; font-weight: 900; font-size: 24px;
             text-shadow: 0 0 10px #ffd700; opacity: 0; pointer-events: none; transition: opacity 0.2s; z-index: 16; letter-spacing: 2px; width: 100%; text-align: center;
+        }
+
+        /* === 手機版專用修正 (螢幕小於 768px) === */
+        @media (max-width: 768px) {
+            body {
+                height: 100dvh;      /* 手機專用動態高度 */
+                position: fixed;     /* 手機專用鎖定 */
+                top: 0;
+                left: 0;
+            }
+
+            /* 手機版能量條上移，避開底部操作區 */
+            #fever-container {
+                bottom: 50px;
+            }
+            #fever-text {
+                bottom: 65px;
+            }
         }
 
         .hud-label { font-size: 10px; color: #00c3ff; letter-spacing: 2px; font-family: 'Orbitron'; opacity: 0.9; }
@@ -952,17 +987,17 @@ class Game {
     }
 
     spawnBrickRow(count = 1, startY = null) {
-        // --- Plan B: Randomize rows between 2 and 4 (MIN 2, MAX 4) ---
-        // Ensure at least 2 rows are spawned to avoid emptiness
-        const randomRows = Math.floor(Math.random() * 3) + 2;
+        // --- Plan B: Randomize rows between 3 and 4 (MIN 3, MAX 4) ---
+        // Ensure at least 3 rows are spawned to avoid emptiness
+        const randomRows = Math.floor(Math.random() * 2) + 3;
         const rowsToSpawn = count === 4 ? randomRows : count; 
         
         // Dynamic min rows based on level for density
-        let finalCount = (arguments.length > 0 && count !== 3 && count !== 4) ? count : (Math.floor(Math.random() * 3) + 2);
+        let finalCount = (arguments.length > 0 && count !== 3 && count !== 4) ? count : (Math.floor(Math.random() * 2) + 3);
         
         // Force higher density at high levels
-        if (this.level >= 10) finalCount = Math.max(finalCount, 2);
-        if (this.level >= 20) finalCount = Math.max(finalCount, 3);
+        if (this.level >= 10) finalCount = Math.max(finalCount, 3);
+        if (this.level >= 20) finalCount = Math.max(finalCount, 4); // Always 4
 
         let cols = Math.floor(this.width / 60); 
         // FIX: 限制最大列數，避免寬螢幕/大型看板分數暴增
@@ -1012,7 +1047,7 @@ class Game {
             const effectiveLevel = Math.min(this.level, 20);
             
             // 1. Brick Speed: Step increase
-            // Base 1.0/1.3 -> Add 0.15 per level (Increased from 0.05)
+            // Base 1.0/1.3 -> Add 0.15 per level
             this.brickSpeed = this.baseBrickSpeed + (effectiveLevel * 0.15); 
             
             // 2. Ball Speed: Gradual increase
@@ -1020,13 +1055,14 @@ class Game {
             
             // FIX: Adjusted Curve as requested
             // Start slower (1.7 mobile / 4.0 PC)
-            // Scale smoother (0.2 mobile per level)
-            // Cap at 9.0
+            // Scale smoother (0.22 mobile per level)
+            // Cap at 5.0 Mobile / 12.0 PC
             const baseBall = isTouch ? 1.7 : 4.0; 
-            const speedInc = isTouch ? 0.2 : 0.6; 
+            const speedInc = isTouch ? 0.22 : 0.6; 
+            const maxSpeed = isTouch ? 5.0 : 12.0;
             
             let newBallSpeed = baseBall + (effectiveLevel * speedInc);
-            newBallSpeed = Math.min(newBallSpeed, 9.0); // Hard Cap
+            newBallSpeed = Math.min(newBallSpeed, maxSpeed); // Hard Cap
             
             // Scale current balls to match new speed immediately
             this.balls.forEach(b => {
@@ -1142,12 +1178,12 @@ class Game {
         });
         
         // Spawn Bricks Logic (tied to level)
-        // Plan A: Initial 3500ms, Floor 2000ms
+        // Plan A: Initial 3000ms, Floor 1500ms
         // Reduce 100ms per level
-        const spawnInterval = Math.max(2000, 3500 - (this.level * 100)); 
+        const spawnInterval = Math.max(1500, 3000 - (this.level * 100)); 
         if(Date.now() - this.lastBrickSpawnTime > spawnInterval) { 
-            // --- Plan B: Random rows 2-4 ---
-            const randomRows = Math.floor(Math.random() * 3) + 2;
+            // --- Plan B: Random rows 3-4 ---
+            const randomRows = Math.floor(Math.random() * 2) + 3;
             this.spawnBrickRow(randomRows); 
             this.lastBrickSpawnTime = Date.now(); 
         }
@@ -1400,6 +1436,7 @@ class Game {
         });
         this.bricks = this.bricks.filter(b => b.status === 1);
     }
+
     destroyBrick(b) {
         b.status = 0; 
         
@@ -1472,7 +1509,7 @@ class Game {
         let otherThreshold = 0.16 - reduction;
         if (otherThreshold < 0.06) otherThreshold = 0.06; // Fix: Min 5% chance for common items
 
-        const isHighScore = this.score >= 1000000;
+        const isHighScore = this.score >= 200000;
         
         // --- Dynamic Black Hole Chance ---
         let highLevelBlackHoleChance = 0;
@@ -1487,8 +1524,9 @@ class Game {
         if (this.score > 200000 && rand < highLevelBlackHoleChance) {
              type = 'blackhole';
         }
-        // Logic to include debuffs in the "other" pool
+        // Removed forced Expand after 200k
         
+        // Logic to include debuffs in the "other" pool
         // 0.000 - 0.005: Gingerbread (0.5%)
         else if (rand < 0.005) {
             if (!isHighScore) type = 'gingerbread';
@@ -1534,6 +1572,7 @@ class Game {
         
         if (type) this.powerUps.push({ x: b.x + b.w/2, y: b.y, type: type });
     }
+
     activatePowerUp(type) {
         // Play sound logic - check for debuff
         if (type === 'shrink' || type === 'fog' || type === 'blackhole') {
@@ -1613,6 +1652,7 @@ class Game {
         
         setTimeout(() => this.modeIndicator.style.opacity = '0', 1500); 
     }
+
     shootBullet() { this.audio.playShoot(); this.bullets.push({ x: this.paddle.x + 10, y: this.paddle.y, w: 4, h: 15 }); this.bullets.push({ x: this.paddle.x + this.paddle.w - 14, y: this.paddle.y, w: 4, h: 15 }); }
     createParticles(x, y, color) { for(let i=0; i<8; i++) this.particles.push({ x: x, y: y, dx: (Math.random()-0.5)*5, dy: (Math.random()-0.5)*5, life: 1, color: color }); }
     createFloatText(text, x, y) { const div = document.createElement('div'); div.innerText = text; div.style.position = 'absolute'; div.style.left = x + 'px'; div.style.top = y + 'px'; div.style.color = '#fff'; div.style.fontWeight = 'bold'; div.style.fontSize = '20px'; div.style.textShadow = '0 0 10px #00c3ff'; div.style.pointerEvents = 'none'; div.style.transition = 'all 1s'; document.body.appendChild(div); requestAnimationFrame(() => { div.style.top = (y - 100) + 'px'; div.style.opacity = 0; }); setTimeout(() => div.remove(), 1000); }
