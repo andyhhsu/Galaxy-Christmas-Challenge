@@ -912,6 +912,9 @@ class Game {
         // Initial Ball Speed based on level 1
         // Using the agreed upon 1.7 start for mobile (User request: 1.7)
         const initialBallSpeed = isTouch ? 1.7 : 4.0; 
+        // Fix for Multiball needing reference
+        this.baseBallSpeed = initialBallSpeed;
+
         this.balls = []; this.balls.push({ x: this.width/2, y: paddleY - 20, r: 8, dx: 0, dy: 0, speed: initialBallSpeed, active: false, prevY: paddleY - 20 });
         this.bricks = []; this.particles = []; this.powerUps = []; this.bullets = [];
         this.aiMode = false; this.spenMode = false; this.gingerbreadMode = false; this.dangerOverlay.classList.remove('danger-pulse');
@@ -1064,13 +1067,13 @@ class Game {
             // FIX: Adjusted Curve as requested
             // Start slower (1.7 mobile / 4.0 PC)
             // Scale smoother (0.22 mobile per level)
-            const baseBall = isTouch ? 1.7 : 4.0; 
+            const currentBase = isTouch ? 1.7 : 4.0; // Renamed to avoid ReferenceError
             const speedInc = isTouch ? 0.22 : 0.6; 
             
             // Cap at 4.0 Mobile / 10.0 PC
             const maxSpeed = isTouch ? 4.0 : 10.0;
             
-            let newBallSpeed = baseBall + (effectiveLevel * speedInc);
+            let newBallSpeed = currentBase + (effectiveLevel * speedInc);
             newBallSpeed = Math.min(newBallSpeed, maxSpeed); // Hard Cap
             
             // Scale current balls to match new speed immediately
@@ -1568,7 +1571,11 @@ class Game {
              }
              // Rest for buffs
              else {
-                 const commonTypes = ['expand', 'spen', 'ai'];
+                 // Modified here to exclude expand at high score
+                 let commonTypes = ['expand', 'spen', 'ai'];
+                 if (isHighScore) {
+                     commonTypes = ['spen', 'ai'];
+                 }
                  type = commonTypes[Math.floor(Math.random() * commonTypes.length)];
              }
         }
