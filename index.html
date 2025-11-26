@@ -652,7 +652,7 @@ class Game {
         this.ctx = this.canvas.getContext('2d');
         this.audio = new SoundManager();
         this.frame = 0;
-        this.lastTime = 0; // Initialize for Delta Time
+        // REMOVED: this.lastTime
         
         this.width = this.canvas.clientWidth || window.innerWidth; 
         this.height = this.canvas.clientHeight || window.innerHeight; 
@@ -829,7 +829,6 @@ class Game {
     reset() {
         this.running = false; this.score = 0; if(this.hudScore) this.hudScore.innerText = "0";
         this.frame = 0;
-        this.lastTime = 0; // Reset time
         
         // Reset Level
         this.level = 1;
@@ -866,10 +865,9 @@ class Game {
         
         this.difficultyLevel = 1; this.lastBrickSpawnTime = 0; this.lastShotTime = 0;
         
-        // Initial Speeds - SPEED BOOSTED
+        // Initial Speeds - Reverted to Frame based logic but with new curve
         const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-        // Previous: 0.6 (Mobile) / 0.5 (PC)
-        // New: 1.3 (Mobile) / 1.0 (PC) -> Much faster start
+        // Mobile 1.3 base speed for bricks
         this.baseBrickSpeed = isTouch ? 1.3 : 1.0; 
         this.brickSpeed = this.baseBrickSpeed;
         
@@ -877,8 +875,8 @@ class Game {
         this.paddle = { w: 100, h: 24, x: this.width/2 - 50, y: paddleY, color: '#00c3ff', state: 'cover' };
         
         // Initial Ball Speed based on level 1
-        // FIX: Reset to slightly slower start, but allow aggressive scaling
-        const initialBallSpeed = isTouch ? 1.5 : 3.0; 
+        // Using the agreed upon 3.0 start for mobile
+        const initialBallSpeed = isTouch ? 3.0 : 4.0; 
         this.balls = []; this.balls.push({ x: this.width/2, y: paddleY - 20, r: 8, dx: 0, dy: 0, speed: initialBallSpeed, active: false, prevY: paddleY - 20 });
         this.bricks = []; this.particles = []; this.powerUps = []; this.bullets = [];
         this.aiMode = false; this.spenMode = false; this.gingerbreadMode = false; this.dangerOverlay.classList.remove('danger-pulse');
@@ -913,12 +911,11 @@ class Game {
         
         this.reset(); 
         this.running = true; 
-        this.lastTime = performance.now(); // Start clock
         
         if(this.balls.length > 0) { this.balls[0].active = true; this.balls[0].dy = -this.balls[0].speed; this.balls[0].dx = (Math.random() - 0.5) * 6; } 
         
         this.spawnBrickRowSafe();
-        requestAnimationFrame((t) => this.loop(t));
+        this.loop();
     }
 
     backToHome() {
@@ -1015,19 +1012,20 @@ class Game {
             
             // 1. Brick Speed: Step increase
             // Base 1.0/1.3 -> Add 0.15 per level (Increased from 0.05)
-            // This ensures the game gets progressively harder/faster
             this.brickSpeed = this.baseBrickSpeed + (effectiveLevel * 0.15); 
             
             // 2. Ball Speed: Gradual increase
             const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
             
-            // FIX: Adjusted Curve
-            // Start slower (1.5 mobile / 3.0 PC)
-            // Scale faster (0.35 mobile / 0.6 PC per level)
-            const baseBall = isTouch ? 1.5 : 3.0; 
-            const speedInc = isTouch ? 0.35 : 0.6; 
+            // FIX: Adjusted Curve as requested
+            // Start faster (3.0 mobile)
+            // Scale smoother (0.2 mobile per level)
+            // Cap at 9.0
+            const baseBall = isTouch ? 3.0 : 4.0; 
+            const speedInc = isTouch ? 0.2 : 0.6; 
             
-            const newBallSpeed = baseBall + (effectiveLevel * speedInc);
+            let newBallSpeed = baseBall + (effectiveLevel * speedInc);
+            newBallSpeed = Math.min(newBallSpeed, 9.0); // Hard Cap
             
             // Scale current balls to match new speed immediately
             this.balls.forEach(b => {
@@ -1054,7 +1052,7 @@ class Game {
         }, 1500);
     }
 
-    update(dtFactor) {
+    update() {
         this.frame++;
         
         // Run Level Check
@@ -1068,14 +1066,13 @@ class Game {
         
         // Fever Timer
         if (this.feverMode) {
-            // Drain fever energy over time - Normalized by dtFactor
-            // Previous was 0.0833 per frame @ 60fps
-            // 0.0833 * 60 = 5.0 per second roughly
-            this.feverEnergy -= 0.0833 * dtFactor; 
+            // Drain fever energy over time - Frame based
+            // 0.0833 per frame -> ~5 seconds at 60fps
+            this.feverEnergy -= 0.0833; 
             
             // Gatling logic - BARRAGE (Gift Storm)
             if (this.feverType === 'gatling') {
-                if (this.frame % 5 === 0) { // Keep frame check for rhythm, but could move to time
+                if (this.frame % 5 === 0) { 
                     // Shoot 3 bullets with spread (Gift colors: Red, Green, Gold)
                     const colors = ['#ff0000', '#00ff00', '#ffd700'];
                     const c1 = colors[Math.floor(Math.random()*3)];
@@ -1139,7 +1136,7 @@ class Game {
         }
 
         this.bgParticles.forEach(p => { 
-            p.y += p.speed * dtFactor; 
+            p.y += p.speed; 
             if(p.y > this.height) { p.y = -5; p.x = Math.random() * this.width; } 
         });
         
@@ -1166,9 +1163,15 @@ class Game {
         // Movement Logic - Smoother
         const currentBrickSpeed = this.brickSpeed * (this.aiMode ? 0.5 : 1);
         
+        // Dynamic Brick Flow Logic
+        const brickCount = this.bricks.length;
+        let flowFactor = 1.0;
+        if (brickCount < 5) flowFactor = 1.5;      // Fast Flow
+        else if (brickCount > 20) flowFactor = 0.6; // Slow/Buffer Flow
+        
         this.bricks.forEach(b => { 
             if(b.status === 1) { 
-                b.y += currentBrickSpeed * dtFactor; 
+                b.y += currentBrickSpeed * flowFactor; 
                 if(b.y + b.h > this.paddle.y - 150) danger = true; 
                 
                 if (this.gingerbreadMode && b.y + b.h >= this.paddle.y) {
@@ -1206,8 +1209,8 @@ class Game {
                 let dist = Math.sqrt(dx*dx + dy*dy);
                 
                 if (dist > 5) {
-                    b.x += dx * 0.1 * dtFactor; // Suction speed normalized
-                    b.y += dy * 0.1 * dtFactor;
+                    b.x += dx * 0.1; // Suction speed
+                    b.y += dy * 0.1;
                     b.r *= 0.95; // Shrink
                 } else {
                     b.active = false; // Eaten
@@ -1249,8 +1252,8 @@ class Game {
             }
 
             ball.prevY = ball.y; 
-            ball.x += ball.dx * (this.aiMode ? 0.6 : 1) * dtFactor; 
-            ball.y += ball.dy * (this.aiMode ? 0.6 : 1) * dtFactor;
+            ball.x += ball.dx * (this.aiMode ? 0.6 : 1); 
+            ball.y += ball.dy * (this.aiMode ? 0.6 : 1);
             
             // Cap Max Vertical Speed to prevent tunneling
             const maxVSpeed = 12; 
@@ -1367,7 +1370,7 @@ class Game {
         });
 
         this.powerUps.forEach((p, i) => { 
-            p.y += 3 * dtFactor; // Normalize powerup drop speed
+            p.y += 3; // Normalize powerup drop speed
             if(p.y + 15 > this.paddle.y && p.y - 15 < this.paddle.y + this.paddle.h && p.x > this.paddle.x && p.x < this.paddle.x + this.paddle.w) { 
                 this.activatePowerUp(p.type); 
                 this.powerUps.splice(i, 1); 
@@ -1377,8 +1380,8 @@ class Game {
         
         // Updated bullet update logic to handle custom dx/dy
         this.bullets.forEach((b, i) => { 
-            b.y += (b.dy || -15) * dtFactor; 
-            b.x += (b.dx || 0) * dtFactor;
+            b.y += (b.dy || -15); 
+            b.x += (b.dx || 0);
             
             this.bricks.forEach(brick => { 
                 if(brick.status === 1 && b.x > brick.x && b.x < brick.x + brick.w && b.y > brick.y && b.y < brick.y + brick.h) { 
@@ -1389,9 +1392,9 @@ class Game {
             if(b.y < 0 || b.x < 0 || b.x > this.width) this.bullets.splice(i, 1); 
         });
         this.particles.forEach((p, i) => { 
-            p.x += p.dx * dtFactor; 
-            p.y += p.dy * dtFactor; 
-            p.life -= 0.05 * dtFactor; 
+            p.x += p.dx; 
+            p.y += p.dy; 
+            p.life -= 0.05; 
             if(p.life <= 0) this.particles.splice(i, 1); 
         });
         this.bricks = this.bricks.filter(b => b.status === 1);
@@ -1482,10 +1485,6 @@ class Game {
         // UPDATED: 200k instead of 500k
         if (this.score > 200000 && rand < highLevelBlackHoleChance) {
              type = 'blackhole';
-        }
-        // NEW: Help player after 200k with Width Expand
-        else if (this.score > 200000 && rand < highLevelBlackHoleChance + 0.05) {
-             type = 'expand';
         }
         // Logic to include debuffs in the "other" pool
         
@@ -1747,25 +1746,11 @@ class Game {
         this.particles.forEach(p => { this.ctx.globalAlpha = p.life; this.ctx.fillStyle = p.color; this.ctx.beginPath(); this.ctx.arc(p.x, p.y, 3, 0, Math.PI*2); this.ctx.fill(); this.ctx.globalAlpha = 1; });
     }
 
-    loop(timestamp) { 
+    loop() { 
         if(!this.running) return; 
-        
-        // --- Delta Time Logic ---
-        if (!this.lastTime) this.lastTime = timestamp;
-        let deltaTime = (timestamp - this.lastTime);
-        this.lastTime = timestamp;
-        
-        // Cap deltaTime to prevent huge jumps if tab inactive (max 100ms)
-        if (deltaTime > 100) deltaTime = 100;
-        
-        // Target FPS 60. dtFactor = 1 means running at 60fps.
-        // If running at 120fps, dtFactor will be 0.5 (move half distance per frame).
-        // If running at 30fps, dtFactor will be 2.0 (move double distance per frame).
-        const dtFactor = deltaTime / (1000 / 60);
-        
-        this.update(dtFactor); 
+        this.update(); 
         this.draw(); 
-        requestAnimationFrame((t) => this.loop(t)); 
+        requestAnimationFrame(() => this.loop()); 
     }
 }
 
