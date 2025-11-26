@@ -649,6 +649,7 @@ class Game {
         this.ctx = this.canvas.getContext('2d');
         this.audio = new SoundManager();
         this.frame = 0;
+        this.lastTime = 0; // Initialize for Delta Time
         
         this.width = this.canvas.clientWidth || window.innerWidth; 
         this.height = this.canvas.clientHeight || window.innerHeight; 
@@ -825,6 +826,7 @@ class Game {
     reset() {
         this.running = false; this.score = 0; if(this.hudScore) this.hudScore.innerText = "0";
         this.frame = 0;
+        this.lastTime = 0; // Reset time
         
         // Reset Level
         this.level = 1;
@@ -904,10 +906,14 @@ class Game {
         gtag('event', 'game_restart');
         GoogleSheetAPI.incrementPlayCount();
         
-        this.reset(); this.running = true; if(this.balls.length > 0) { this.balls[0].active = true; this.balls[0].dy = -this.balls[0].speed; this.balls[0].dx = (Math.random() - 0.5) * 6; } 
+        this.reset(); 
+        this.running = true; 
+        this.lastTime = performance.now(); // Start clock
+        
+        if(this.balls.length > 0) { this.balls[0].active = true; this.balls[0].dy = -this.balls[0].speed; this.balls[0].dx = (Math.random() - 0.5) * 6; } 
         
         this.spawnBrickRowSafe();
-        this.loop();
+        requestAnimationFrame((t) => this.loop(t));
     }
 
     backToHome() {
@@ -944,18 +950,21 @@ class Game {
     }
 
     spawnBrickRow(count = 1, startY = null) {
-        // --- Randomize rows between 1 and 5 ---
-        const randomRows = Math.floor(Math.random() * 5) + 1;
-        const rowsToSpawn = count === 4 ? randomRows : count; // Override if it was the initial call, or simplify to just use randomRows if intended for all spawns. 
+        // --- Randomize rows between 1 and 4 (MAX 4) ---
+        const randomRows = Math.floor(Math.random() * 4) + 1;
+        const rowsToSpawn = count === 4 ? randomRows : count; 
         
         // Dynamic min rows based on level for density
-        let finalCount = (arguments.length > 0 && count !== 3 && count !== 4) ? count : (Math.floor(Math.random() * 5) + 1);
+        let finalCount = (arguments.length > 0 && count !== 3 && count !== 4) ? count : (Math.floor(Math.random() * 4) + 1);
         
         // Force higher density at high levels
         if (this.level >= 10) finalCount = Math.max(finalCount, 2);
         if (this.level >= 20) finalCount = Math.max(finalCount, 3);
 
-        const cols = Math.floor(this.width / 60); 
+        let cols = Math.floor(this.width / 60); 
+        // FIX: 限制最大列數，避免寬螢幕/大型看板分數暴增
+        if(cols > 9) cols = 9; 
+
         if(cols <= 0) return; 
         
         const offset = (this.width - (cols * 55)) / 2;
@@ -1000,14 +1009,14 @@ class Game {
             const effectiveLevel = Math.min(this.level, 20);
             
             // 1. Brick Speed: Step increase
-            // Base 0.5/0.8 -> Add 0.1 per level
-            this.brickSpeed = this.baseBrickSpeed + (effectiveLevel * 0.1); 
+            // Base 0.5/0.8 -> Add 0.05 per level (Reduced from 0.1)
+            this.brickSpeed = this.baseBrickSpeed + (effectiveLevel * 0.05); 
             
             // 2. Ball Speed: Gradual increase
             const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
             // Lowered base speed and increment for mobile
             const baseBall = isTouch ? 1.5 : 4.0; // Reduced from 2.0
-            const speedInc = isTouch ? 0.15 : 0.4; // Reduced from 0.25
+            const speedInc = isTouch ? 0.1 : 0.2; // Reduced from 0.15 / 0.4
             const newBallSpeed = baseBall + (effectiveLevel * speedInc);
             
             // Scale current balls to match new speed immediately
@@ -1035,29 +1044,28 @@ class Game {
         }, 1500);
     }
 
-    update() {
+    update(dtFactor) {
         this.frame++;
         
         // Run Level Check
         this.updateLevel();
         
-        // Gravity Warning Check (Global Event at 100k)
-        if (this.score >= 100000 && !this.gravityWarningShown) {
+        // Gravity Warning Check (Global Event at 200k)
+        if (this.score >= 200000 && !this.gravityWarningShown) {
             this.gravityWarningShown = true;
             this.triggerGravityWarning();
         }
         
         // Fever Timer
         if (this.feverMode) {
-            // Drain fever energy over time (5 seconds = 300 frames at 60fps)
-            // 100% / 300 frames = 0.33% per frame. But we use absolute units.
-            // Max energy is 25 (bricks). 
-            // To drain 25 in 5s: 25 / (60*5) = 0.0833 per frame
-            this.feverEnergy -= 0.0833; 
+            // Drain fever energy over time - Normalized by dtFactor
+            // Previous was 0.0833 per frame @ 60fps
+            // 0.0833 * 60 = 5.0 per second roughly
+            this.feverEnergy -= 0.0833 * dtFactor; 
             
             // Gatling logic - BARRAGE (Gift Storm)
             if (this.feverType === 'gatling') {
-                if (this.frame % 5 === 0) { // Fire every 5 frames (faster)
+                if (this.frame % 5 === 0) { // Keep frame check for rhythm, but could move to time
                     // Shoot 3 bullets with spread (Gift colors: Red, Green, Gold)
                     const colors = ['#ff0000', '#00ff00', '#ffd700'];
                     const c1 = colors[Math.floor(Math.random()*3)];
@@ -1120,14 +1128,17 @@ class Game {
             this.feverFill.style.width = pct + '%';
         }
 
-        this.bgParticles.forEach(p => { p.y += p.speed; if(p.y > this.height) { p.y = -5; p.x = Math.random() * this.width; } });
+        this.bgParticles.forEach(p => { 
+            p.y += p.speed * dtFactor; 
+            if(p.y > this.height) { p.y = -5; p.x = Math.random() * this.width; } 
+        });
         
         // Spawn Bricks Logic (tied to level)
         // Faster spawns at higher levels
         const spawnInterval = Math.max(1000, 4000 - (this.level * 150)); // More aggressive cap at 1s
         if(Date.now() - this.lastBrickSpawnTime > spawnInterval) { 
-            // --- Change here: Random rows 1-5 ---
-            const randomRows = Math.floor(Math.random() * 5) + 1;
+            // --- Change here: Random rows 1-4 (MAX 4) ---
+            const randomRows = Math.floor(Math.random() * 4) + 1;
             this.spawnBrickRow(randomRows); 
             this.lastBrickSpawnTime = Date.now(); 
         }
@@ -1146,7 +1157,7 @@ class Game {
         
         this.bricks.forEach(b => { 
             if(b.status === 1) { 
-                b.y += currentBrickSpeed; 
+                b.y += currentBrickSpeed * dtFactor; 
                 if(b.y + b.h > this.paddle.y - 150) danger = true; 
                 
                 if (this.gingerbreadMode && b.y + b.h >= this.paddle.y) {
@@ -1184,8 +1195,8 @@ class Game {
                 let dist = Math.sqrt(dx*dx + dy*dy);
                 
                 if (dist > 5) {
-                    b.x += dx * 0.1; // Suction speed
-                    b.y += dy * 0.1;
+                    b.x += dx * 0.1 * dtFactor; // Suction speed normalized
+                    b.y += dy * 0.1 * dtFactor;
                     b.r *= 0.95; // Shrink
                 } else {
                     b.active = false; // Eaten
@@ -1203,7 +1214,7 @@ class Game {
             if (!ball.active) return; 
             
             // AI Mode slows down balls too
-            let moveSpeed = ball.speed * (this.aiMode ? 0.6 : 1);
+            // let moveSpeed = ball.speed * (this.aiMode ? 0.6 : 1);
 
             // Fix: Prevent vertical locking
             // Ensure dx is at least 20% of total speed
@@ -1227,8 +1238,8 @@ class Game {
             }
 
             ball.prevY = ball.y; 
-            ball.x += ball.dx * (this.aiMode ? 0.6 : 1); 
-            ball.y += ball.dy * (this.aiMode ? 0.6 : 1);
+            ball.x += ball.dx * (this.aiMode ? 0.6 : 1) * dtFactor; 
+            ball.y += ball.dy * (this.aiMode ? 0.6 : 1) * dtFactor;
             
             // Cap Max Vertical Speed to prevent tunneling
             const maxVSpeed = 12; 
@@ -1344,11 +1355,19 @@ class Game {
             });
         });
 
-        this.powerUps.forEach((p, i) => { p.y += 3; if(p.y + 15 > this.paddle.y && p.y - 15 < this.paddle.y + this.paddle.h && p.x > this.paddle.x && p.x < this.paddle.x + this.paddle.w) { this.activatePowerUp(p.type); this.powerUps.splice(i, 1); } if(p.y > this.height) this.powerUps.splice(i, 1); });
+        this.powerUps.forEach((p, i) => { 
+            p.y += 3 * dtFactor; // Normalize powerup drop speed
+            if(p.y + 15 > this.paddle.y && p.y - 15 < this.paddle.y + this.paddle.h && p.x > this.paddle.x && p.x < this.paddle.x + this.paddle.w) { 
+                this.activatePowerUp(p.type); 
+                this.powerUps.splice(i, 1); 
+            } 
+            if(p.y > this.height) this.powerUps.splice(i, 1); 
+        });
+        
         // Updated bullet update logic to handle custom dx/dy
         this.bullets.forEach((b, i) => { 
-            b.y += (b.dy || -15); 
-            b.x += (b.dx || 0);
+            b.y += (b.dy || -15) * dtFactor; 
+            b.x += (b.dx || 0) * dtFactor;
             
             this.bricks.forEach(brick => { 
                 if(brick.status === 1 && b.x > brick.x && b.x < brick.x + brick.w && b.y > brick.y && b.y < brick.y + brick.h) { 
@@ -1358,7 +1377,12 @@ class Game {
             }); 
             if(b.y < 0 || b.x < 0 || b.x > this.width) this.bullets.splice(i, 1); 
         });
-        this.particles.forEach((p, i) => { p.x += p.dx; p.y += p.dy; p.life -= 0.05; if(p.life <= 0) this.particles.splice(i, 1); });
+        this.particles.forEach((p, i) => { 
+            p.x += p.dx * dtFactor; 
+            p.y += p.dy * dtFactor; 
+            p.life -= 0.05 * dtFactor; 
+            if(p.life <= 0) this.particles.splice(i, 1); 
+        });
         this.bricks = this.bricks.filter(b => b.status === 1);
     }
     destroyBrick(b) {
@@ -1437,15 +1461,15 @@ class Game {
         
         // --- Dynamic Black Hole Chance ---
         let highLevelBlackHoleChance = 0;
-        // UPDATED: 100k instead of 500k
-        if (this.score > 100000) {
-            // Increase chance by 1% every 100k points after 100k, max 10%
-            highLevelBlackHoleChance = Math.min(0.1, (this.score - 100000) / 5000000); 
+        // UPDATED: 200k instead of 500k
+        if (this.score > 200000) {
+            // Increase chance by 1% every 100k points after 200k, max 10%
+            highLevelBlackHoleChance = Math.min(0.1, (this.score - 200000) / 5000000); 
         }
         
         // Priority check for High Score Black Hole
-        // UPDATED: 100k instead of 500k
-        if (this.score > 100000 && rand < highLevelBlackHoleChance) {
+        // UPDATED: 200k instead of 500k
+        if (this.score > 200000 && rand < highLevelBlackHoleChance) {
              type = 'blackhole';
         }
         // Logic to include debuffs in the "other" pool
@@ -1460,10 +1484,10 @@ class Game {
         }
         // 0.010 - 0.015: Black Hole (0.5%) - FIXED RATE IN GENERAL POOL
         else if (rand < 0.015) {
-             if (this.score > 100000) {
+             if (this.score > 200000) {
                  type = 'blackhole';
              } else {
-                 // Fallback if < 100k (don't spawn black hole)
+                 // Fallback if < 200k (don't spawn black hole)
                  type = 'fog'; // Forced Fog as requested
              }
         }
@@ -1488,8 +1512,8 @@ class Game {
              }
         }
         
-        // Final Safety Check: Ensure no Black Hole under 100k
-        if (type === 'blackhole' && this.score < 100000) {
+        // Final Safety Check: Ensure no Black Hole under 200k
+        if (type === 'blackhole' && this.score < 200000) {
             type = 'fog';
         }
         
@@ -1709,7 +1733,26 @@ class Game {
         this.particles.forEach(p => { this.ctx.globalAlpha = p.life; this.ctx.fillStyle = p.color; this.ctx.beginPath(); this.ctx.arc(p.x, p.y, 3, 0, Math.PI*2); this.ctx.fill(); this.ctx.globalAlpha = 1; });
     }
 
-    loop() { if(!this.running) return; this.update(); this.draw(); requestAnimationFrame(() => this.loop()); }
+    loop(timestamp) { 
+        if(!this.running) return; 
+        
+        // --- Delta Time Logic ---
+        if (!this.lastTime) this.lastTime = timestamp;
+        let deltaTime = (timestamp - this.lastTime);
+        this.lastTime = timestamp;
+        
+        // Cap deltaTime to prevent huge jumps if tab inactive (max 100ms)
+        if (deltaTime > 100) deltaTime = 100;
+        
+        // Target FPS 60. dtFactor = 1 means running at 60fps.
+        // If running at 120fps, dtFactor will be 0.5 (move half distance per frame).
+        // If running at 30fps, dtFactor will be 2.0 (move double distance per frame).
+        const dtFactor = deltaTime / (1000 / 60);
+        
+        this.update(dtFactor); 
+        this.draw(); 
+        requestAnimationFrame((t) => this.loop(t)); 
+    }
 }
 
 const api = GoogleSheetAPI;
