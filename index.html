@@ -1072,6 +1072,38 @@ class Game {
             }
 
             if (this.feverEnergy <= 0) {
+                // 魯道夫衝刺(紅球) 結束爆炸特效
+                if (this.feverType === 'fireball') {
+                    this.balls.forEach(ball => {
+                        if (ball.active) {
+                            // 視覺特效
+                            this.createParticles(ball.x, ball.y, '#ff4500');
+                            // 爆炸範圍 (半徑 120)
+                            const explosionRadius = 120;
+                            this.bricks.forEach(b => {
+                                if (b.status === 1) {
+                                    // 簡單的矩形中心距離計算
+                                    const dx = b.x + b.w/2 - ball.x;
+                                    const dy = b.y + b.h/2 - ball.y;
+                                    if (Math.sqrt(dx*dx + dy*dy) < explosionRadius) {
+                                        this.destroyBrick(b);
+                                        this.createParticles(b.x + b.w/2, b.y + b.h/2, '#ff0000');
+                                    }
+                                }
+                            });
+                        }
+                    });
+                    this.audio.playNuke(); // 播放爆炸音效
+                    this.createFloatText("💥 BOOM!", this.balls[0]?.x || this.width/2, this.balls[0]?.y || this.height/2);
+                    
+                    // 畫面震動
+                    const wrapper = document.getElementById('game-wrapper');
+                    wrapper.classList.remove('shake-sm');
+                    void wrapper.offsetWidth; 
+                    wrapper.classList.add('shake-sm');
+                    setTimeout(() => wrapper.classList.remove('shake-sm'), 200);
+                }
+
                 this.feverMode = false;
                 this.feverEnergy = 0;
                 this.feverType = null;
@@ -1506,7 +1538,7 @@ class Game {
         }
         else if (type === 'gingerbread') {
              this.gingerbreadMode = true;
-             this.paddle.w = this.width * 1.5; // Scheme A: Wide paddle
+             this.paddle.w = this.width / 2; // Scheme A: Half screen width
              setTimeout(() => {
                  this.gingerbreadMode = false;
                  this.paddle.w = 100; 
