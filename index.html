@@ -983,38 +983,46 @@ class Game {
             }, 100);
             return;
         }
-        this.spawnBrickRow(4);
+        // Spawn 4 rows starting a bit lower (50px) to be visible immediately
+        this.spawnBrickRow(4, 50);
     }
 
-    spawnBrickRow(count = 1, startY = null) {
-        // --- Plan B: Randomize rows between 3 and 4 (MIN 3, MAX 4) ---
-        // Ensure at least 3 rows are spawned to avoid emptiness
-        const randomRows = Math.floor(Math.random() * 2) + 3;
-        const rowsToSpawn = count === 4 ? randomRows : count; 
-        
-        // Dynamic min rows based on level for density
-        let finalCount = (arguments.length > 0 && count !== 3 && count !== 4) ? count : (Math.floor(Math.random() * 2) + 3);
-        
-        // Force higher density at high levels
-        if (this.level >= 10) finalCount = Math.max(finalCount, 3);
-        if (this.level >= 20) finalCount = Math.max(finalCount, 4); // Always 4
+    spawnBrickRow(rowsInput = null, startYInput = null) {
+        // 1. Calculate Brick Width (Fixed 8 Cols) - RWD Logic
+        const cols = 8;
+        const gap = 5;
+        const totalGap = (cols + 1) * gap;
+        const availableWidth = this.width - totalGap;
+        const brickW = availableWidth / cols;
+        const brickH = 20;
 
-        let cols = Math.floor(this.width / 60); 
-        // FIX: 限制最大列數，避免寬螢幕/大型看板分數暴增
-        if(cols > 9) cols = 9; 
+        // 2. Determine Rows (Force 3-4)
+        // If specific rows requested (e.g. init), use it, but min 3.
+        // Otherwise random 3-4.
+        let rows = rowsInput ? Math.max(rowsInput, 3) : (Math.floor(Math.random() * 2) + 3);
 
-        if(cols <= 0) return; 
-        
-        const offset = (this.width - (cols * 55)) / 2;
-        for(let r=0; r<finalCount; r++) {
+        // 3. Determine Start Y
+        // If input provided, use it. Else default to spawning above screen to flow in.
+        // Default flow logic: start at -40 to stack downwards
+        let currentY = startYInput !== null ? startYInput : -40;
+
+        for(let r=0; r<rows; r++) {
             for(let c=0; c<cols; c++) {
-                if(Math.random() > 0.85) continue; 
-                const types = ['#00c3ff', '#0062cc', '#7c3aed', '#ffffff']; const color = types[Math.floor(Math.random() * types.length)];
-                const yPos = startY !== null ? startY + r * 30 : -40 + r * 30;
-                this.bricks.push({ x: offset + c * 55, y: yPos, w: 50, h: 20, status: 1, color: color });
+                 // Density: 90% chance to spawn (High density)
+                 if(Math.random() > 0.9) continue;
+
+                 const types = ['#00c3ff', '#0062cc', '#7c3aed', '#ffffff'];
+                 const color = types[Math.floor(Math.random() * types.length)];
+
+                 // X position calculation
+                 const x = gap + c * (brickW + gap);
+                 const y = currentY + (r * 30); // 30 is vertical spacing (20h + 10gap)
+
+                 this.bricks.push({ x, y, w: brickW, h: brickH, status: 1, color });
             }
         }
     }
+    
     gameOver(reason) {
         if(!this.running) return; this.running = false; this.audio.playGameOver(); 
         this.audio.stopBGM(); 
@@ -1182,9 +1190,8 @@ class Game {
         // Reduce 100ms per level
         const spawnInterval = Math.max(1500, 3000 - (this.level * 100)); 
         if(Date.now() - this.lastBrickSpawnTime > spawnInterval) { 
-            // --- Plan B: Random rows 3-4 ---
-            const randomRows = Math.floor(Math.random() * 2) + 3;
-            this.spawnBrickRow(randomRows); 
+            // New: Calls internal random 3-4 logic
+            this.spawnBrickRow(); 
             this.lastBrickSpawnTime = Date.now(); 
         }
         
@@ -1203,7 +1210,7 @@ class Game {
         // Dynamic Brick Flow Logic
         const brickCount = this.bricks.length;
         let flowFactor = 1.0;
-        if (brickCount < 5) flowFactor = 1.5;      // Fast Flow
+        if (brickCount < 5) flowFactor = 1.5;       // Fast Flow
         else if (brickCount > 20) flowFactor = 0.6; // Slow/Buffer Flow
         
         this.bricks.forEach(b => { 
@@ -1779,10 +1786,10 @@ class Game {
             if (p.type === 'gingerbread') icon = "🍪";
             this.ctx.fillText(icon, p.x, p.y);
         });
-        this.ctx.fillStyle = '#ffff00'; this.bullets.forEach(b => {
+        this.ctx.fillStyle = '#ffff00'; this.bullets.forEach(b => { 
             // Custom bullet color support
             this.ctx.fillStyle = b.color || '#ffff00';
-            this.ctx.fillRect(b.x, b.y, b.w, b.h);
+            this.ctx.fillRect(b.x, b.y, b.w, b.h); 
         });
         this.particles.forEach(p => { this.ctx.globalAlpha = p.life; this.ctx.fillStyle = p.color; this.ctx.beginPath(); this.ctx.arc(p.x, p.y, 3, 0, Math.PI*2); this.ctx.fill(); this.ctx.globalAlpha = 1; });
     }
