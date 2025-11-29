@@ -16,7 +16,6 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Noto+Sans+TC:wght@300;400;700&display=swap');
         
-        /* 預設：適用於電腦與大型看板 (回歸穩定版) */
         body { 
             margin: 0; 
             background-color: #000; 
@@ -25,8 +24,8 @@
             touch-action: none; 
             user-select: none; 
             width: 100%; 
-            height: 100vh;       /* 標準高度 */
-            position: relative;  /* 標準定位 */
+            height: 100vh;
+            position: relative;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -52,7 +51,6 @@
             100% { transform: translate(0, 0) rotate(0deg); }
         }
         .shake-effect { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
-        /* Short shake for Titan impact */
         .shake-sm { animation: shake 0.2s cubic-bezier(.36,.07,.19,.97) both; }
 
         .ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(12px); z-index: 50; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); opacity: 1; visibility: visible; padding: 20px; }
@@ -62,19 +60,16 @@
         
         #hud { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); padding: 8px 20px; display: flex; flex-direction: column; align-items: center; pointer-events: none; z-index: 10; background: rgba(0,0,0,0.5); border-radius: 20px; border: 1px solid rgba(0, 195, 255, 0.3); backdrop-filter: blur(4px); }
         
-        /* Combo HUD */
         #combo-hud { position: absolute; top: 20px; left: 20px; pointer-events: none; z-index: 15; display: flex; flex-direction: column; align-items: flex-start; transition: opacity 0.3s; }
         .combo-label { font-size: 10px; color: #ffd700; letter-spacing: 2px; font-family: 'Orbitron'; opacity: 0.8; font-weight: bold; margin-bottom: -5px; text-shadow: 0 0 5px rgba(0,0,0,0.5); }
         .combo-value { font-family: 'Orbitron', sans-serif; font-size: 36px; color: #ffd700; font-weight: 900; text-shadow: 0 0 15px rgba(255, 215, 0, 0.6); line-height: 1; transition: transform 0.1s; font-style: italic; }
         .combo-pulse .combo-value { animation: comboPop 0.15s ease-out; color: #fff; }
         @keyframes comboPop { 0% { transform: scale(1); } 50% { transform: scale(1.4); } 100% { transform: scale(1); } }
         
-        /* Level HUD */
         #level-hud { position: absolute; top: 20px; right: 70px; pointer-events: none; z-index: 15; text-align: right; }
         .level-label { font-size: 10px; color: #aaa; letter-spacing: 1px; font-family: 'Orbitron'; }
         .level-value { font-family: 'Orbitron', sans-serif; font-size: 18px; color: #fff; font-weight: bold; }
 
-        /* Fever Bar - Default Position (Desktop/Large Screen) */
         #fever-container {
             position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
             width: 80%; height: 8px; background: rgba(255,255,255,0.1);
@@ -86,34 +81,19 @@
             transition: width 0.2s;
             box-shadow: 0 0 10px #ff4500;
         }
-        .fever-active #fever-fill {
-            animation: feverPulse 0.5s infinite alternate;
-        }
+        .fever-active #fever-fill { animation: feverPulse 0.5s infinite alternate; }
         @keyframes feverPulse { from { filter: brightness(1); } to { filter: brightness(1.5); } }
         
-        /* Fever Text - Default Position (Desktop/Large Screen) */
         #fever-text {
             position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%);
             color: #ff4500; font-family: 'Orbitron'; font-weight: 900; font-size: 24px;
             text-shadow: 0 0 10px #ffd700; opacity: 0; pointer-events: none; transition: opacity 0.2s; z-index: 16; letter-spacing: 2px; width: 100%; text-align: center;
         }
 
-        /* === 手機版專用修正 (螢幕小於 768px) === */
         @media (max-width: 768px) {
-            body {
-                height: 100dvh;      /* 手機專用動態高度 */
-                position: fixed;     /* 手機專用鎖定 */
-                top: 0;
-                left: 0;
-            }
-
-            /* 手機版能量條上移，避開底部操作區 */
-            #fever-container {
-                bottom: 50px;
-            }
-            #fever-text {
-                bottom: 65px;
-            }
+            body { height: 100dvh; position: fixed; top: 0; left: 0; }
+            #fever-container { bottom: 50px; }
+            #fever-text { bottom: 65px; }
         }
 
         .hud-label { font-size: 10px; color: #00c3ff; letter-spacing: 2px; font-family: 'Orbitron'; opacity: 0.9; }
@@ -126,28 +106,7 @@
         .rank-1 { color: #ffd700 !important; font-weight: 900; text-shadow: 0 0 15px rgba(255, 215, 0, 0.4); font-size: 1.1em; }
         .rank-2 { color: #e0e0e0 !important; font-weight: bold; }
         .rank-3 { color: #c58f60 !important; font-weight: bold; }
-        .btn-primary { 
-            background: #000; 
-            border: 1px solid #00c3ff; 
-            padding: 16px 40px; 
-            color: #00c3ff; 
-            font-family: 'Orbitron', sans-serif; 
-            font-weight: bold; 
-            font-size: 18px; 
-            letter-spacing: 2px; 
-            border-radius: 50px; 
-            cursor: pointer; 
-            box-shadow: 0 0 15px rgba(0, 195, 255, 0.2); 
-            transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1); 
-            text-transform: uppercase; 
-            width: 100%; 
-            position: relative; 
-            overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            line-height: 1.2;
-        }
+        .btn-primary { background: #000; border: 1px solid #00c3ff; padding: 16px 40px; color: #00c3ff; font-family: 'Orbitron', sans-serif; font-weight: bold; font-size: 18px; letter-spacing: 2px; border-radius: 50px; cursor: pointer; box-shadow: 0 0 15px rgba(0, 195, 255, 0.2); transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1); text-transform: uppercase; width: 100%; position: relative; overflow: hidden; display: flex; justify-content: center; align-items: center; line-height: 1.2; }
         .btn-primary::after { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(0, 195, 255, 0.2), transparent); transition: 0.5s; }
         .btn-primary:hover { background: #00c3ff; color: #000; box-shadow: 0 0 30px rgba(0, 195, 255, 0.6); }
         .btn-primary:hover::after { left: 100%; }
@@ -193,12 +152,10 @@
         .music-toggle:hover { background: rgba(0, 195, 255, 0.2); border-color: #00c3ff; }
         .music-toggle.muted { color: #555; border-color: #555; }
         
-        /* Store List Modal specific styles */
         .store-list-item { padding: 12px; border-bottom: 1px solid #222; color: #ccc; font-size: 14px; }
         .store-list-item:last-child { border-bottom: none; }
         .store-region { color: #00c3ff; font-weight: bold; margin-bottom: 4px; font-family: 'Orbitron'; font-size: 12px; }
         
-        /* Fog Overlay */
         #fog-overlay { 
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
             background: radial-gradient(circle, transparent 30%, rgba(200, 200, 200, 0.8) 90%);
@@ -215,7 +172,6 @@
 </audio>
 
 <div id="game-wrapper">
-    
     <div class="music-toggle" id="musicBtn" onclick="game.audio.toggleMute(); event.stopPropagation();">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
     </div>
@@ -226,25 +182,21 @@
         <div id="flash-overlay"></div>
         <div id="fog-overlay"></div>
 
-        <!-- Combo Display (Hidden by default) -->
         <div id="combo-hud" class="hidden">
             <div class="combo-label">COMBO</div>
             <div class="combo-value" id="comboVal">0</div>
         </div>
         
-        <!-- Level HUD (Hidden by default) -->
         <div id="level-hud" class="hidden">
             <div class="level-label">LEVEL</div>
             <div class="level-value" id="levelVal">1</div>
         </div>
 
-        <!-- Fever Bar -->
         <div id="fever-container">
             <div id="fever-fill"></div>
         </div>
         <div id="fever-text">FEVER</div>
 
-        <!-- HUD -->
         <div id="hud">
             <div class="hud-item">
                 <div class="hud-label">SCORE</div>
@@ -252,12 +204,9 @@
             </div>
         </div>
 
-        <!-- 狀態顯示 -->
         <div id="mode-indicator" style="position:absolute; bottom:140px; left:50%; transform:translateX(-50%); opacity:0; pointer-events:none; color:#00c3ff; font-weight:bold; background:rgba(0,0,0,0.8); padding:5px 15px; border-radius:4px; font-size:12px; transition:opacity 0.3s; border:1px solid #00c3ff; font-family: 'Orbitron'; letter-spacing: 2px;">MODE</div>
 
-        <!-- 1. Start Screen -->
         <div id="startScreen" class="ui-layer">
-            
             <div class="xmas-deco xmas-sock">🧦</div>
             <div class="xmas-deco xmas-ball">🎄</div>
             <div class="xmas-deco xmas-snow">❄️</div>
@@ -272,7 +221,6 @@
                 <h2 class="text-base md:text-xl text-red-600 tracking-[0.3em] font-bold font-orbitron mt-2 whitespace-nowrap" style="text-shadow: 0 0 10px rgba(220,38,38,0.8);">CHRISTMAS CHALLENGE</h2>
             </div>
             
-            <!-- Top 3 Leaderboard -->
             <div class="lb-container-mini">
                 <div class="lb-title">RANKINGS</div>
                 <div id="top3-list" class="flex flex-col gap-2">
@@ -286,7 +234,6 @@
             </div>
         </div>
 
-        <!-- 1.5 Instruction Screen -->
         <div id="instructionScreen" class="ui-layer hidden">
             <div class="w-full max-w-md flex justify-between items-end mb-4">
                  <h2 class="text-4xl font-bold text-white" style="font-family: 'Noto Sans TC'">遊戲說明</h2>
@@ -325,13 +272,11 @@
                 </div>
             </div>
 
-            <!-- Updated Prize Box with Image -->
             <div class="prize-box">
                 <div class="text-[#ffd700] text-xs font-bold mb-2 text-center tracking-widest">排行挑戰禮 (2026/1/2公布臉書粉專)</div>
                 <img src="https://raw.githubusercontent.com/andyhhsu/Galaxy-Christmas-Challenge/main/reward4.png" alt="Rewards List" class="prize-img">
             </div>
             
-            <!-- 修改後的說明頁面文字 (斷行與強調，增加互動連結，文字變白) -->
             <div class="mb-4 text-[12px] text-[#00c3ff] text-center font-bold tracking-wide leading-relaxed">
                 憑成績登錄截圖，可至<span class="underline cursor-pointer text-white" onclick="game.openStoreModal()">指定三星智慧館</span><br>
                 兌換<span class="text-[#ffd700] text-base font-black">「神秘小禮」</span>
@@ -340,8 +285,6 @@
             <button class="btn-primary max-w-xs mt-2" onclick="game.startRealGame()">開始遊戲</button>
         </div>
 
-
-        <!-- 2. Game Over / Form Screen -->
         <div id="formScreen" class="ui-layer hidden">
             <h2 class="text-4xl font-bold text-white mb-2" style="font-family: 'Noto Sans TC'">遊戲結束</h2>
             
@@ -359,7 +302,6 @@
                 <div class="flex items-center justify-center gap-3 mb-6 bg-[#111] p-3 rounded border border-[#222]">
                     <span class="text-xl">⚡</span>
                     <div>
-                        <!-- 修改後的文字，分兩行 -->
                         <div class="text-sm text-white font-bold">登錄即可抽10,000mAh行動電源</div>
                         <div class="text-[10px] text-gray-500 mt-1 leading-tight">(2026/1/2於三星微風南山<br>旗艦體驗館臉書公佈)</div>
                     </div>
@@ -371,16 +313,13 @@
             </div>
         </div>
 
-        <!-- 3. Flagship Ticket Screen -->
         <div id="ticketScreen" class="ui-layer hidden">
-            
             <div class="text-center mb-6">
                 <div class="text-[#00c3ff] text-4xl mb-2">✓</div>
                 <h2 class="text-xl font-bold text-white tracking-wide">上傳成功</h2>
             </div>
 
             <div class="flagship-ticket">
-                <!-- Overlay content on top of the card image -->
                 <div class="ticket-overlay">
                     <div class="ticket-info-block">
                         <div class="ticket-label-sm">CHALLENGER</div>
@@ -392,7 +331,6 @@
                     </div>
                 </div>
             </div>
-            <!-- Reverted Redeem Text with Store Modal Link -->
             <div class="redeem-text" style="color: #ffd700; font-size: 14px; font-weight: bold; text-align: center; margin-bottom: 20px; text-shadow: 0 0 10px rgba(255, 215, 0, 0.5); animation: pulseText 2s infinite; font-family: 'Noto Sans TC'; letter-spacing: 1px; line-height: 1.6;">
                 憑此頁面截圖，可至<span class="underline cursor-pointer text-white" onclick="game.openStoreModal()">指定三星智慧館</span><br>
                 兌換「神秘小禮」
@@ -405,10 +343,9 @@
             </div>
         </div>
 
-        <!-- 4. Leaderboard Modal -->
         <div id="leaderboardModal" class="modal-layer">
             <h2 class="text-2xl font-bold text-white mb-2" style="font-family: 'Noto Sans TC'">完整排行榜</h2>
-            <p class="text-[#00c3ff] text-xs mb-4 tracking-widest">即時戰況</p>
+            <p class="text-[#00c3ff] text-xs mb-4 tracking-widest" id="lb-status">即時戰況 (讀取中...)</p>
             
             <div class="lb-container-full" id="full-lb-list">
                 <!-- JS Populated -->
@@ -417,7 +354,6 @@
             <button class="btn-secondary max-w-xs mt-4" onclick="api.closeFullLeaderboard()">關閉</button>
         </div>
 
-        <!-- 5. Store List Modal (NEW) -->
         <div id="storeModal" class="modal-layer">
             <h2 class="text-2xl font-bold text-white mb-4" style="font-family: 'Noto Sans TC'">指定三星智慧館</h2>
             
@@ -444,12 +380,12 @@
 <script>
 // --- Google Sheets API Manager ---
 const GoogleSheetAPI = {
-    scriptID: "AKfycbwA30iPuUpW8CLPYZKAraxLQVeCAUbZM4W9cElFFXYTIW9FfklaQtaPdZOKwgjeQ6Hu",
+    scriptID: "AKfycbwUGQFDQsk4JTzACel_dyoi6tnFd3mAoSKNIPCKra5zTikckLUfHWte_s7zt24vcSyr",
     
     get scriptURL() { return `https://script.google.com/macros/s/${this.scriptID}/exec`; },
 
     leaderboardData: [],
-    globalPlayCount: 0, // Set initial to 0 to reflect backend if empty
+    globalPlayCount: 0,
 
     mockData: [ { name: "AI_AGENT", score: 15000 }, { name: "Z_FOLD_PRO", score: 12500 }, { name: "VIP_MEMBER", score: 9800 }, { name: "GUEST_001", score: 5000 } ],
 
@@ -462,43 +398,48 @@ const GoogleSheetAPI = {
         const el = document.getElementById('globalPlayCount');
         if(el) el.innerText = "...";
 
-        // FIX: 增加 t=Date.now() 防止快取，且強制 API 資料優先於 localStorage
         fetch(this.scriptURL + "?action=get_play_count&t=" + Date.now())
             .then(res => res.json())
             .then(data => {
                 if (typeof data.count === 'number') {
                     this.globalPlayCount = data.count;
                     if(el) el.innerText = this.globalPlayCount.toLocaleString();
-                    // 強制更新 localStorage，解決舊資料卡住問題
                     localStorage.setItem('playCount', this.globalPlayCount);
                 }
             })
             .catch(e => {
                 console.error("Fetch failed, falling back to local", e);
-                // 只有在 API 失敗時才讀取 LocalStorage
                 const stored = localStorage.getItem('playCount');
                 if (stored && el) el.innerText = parseInt(stored).toLocaleString();
             });
     },
 
     incrementPlayCount: function() {
-        // 樂觀更新 (Optimistic Update)
         this.globalPlayCount++;
-        // Fire and forget to backend
         fetch(this.scriptURL + "?action=increment_play_count").catch(console.error);
     },
 
     fetchLeaderboard: async function() {
         try {
-            const response = await fetch(this.scriptURL + "?action=get&t=" + Date.now());
+            const response = await fetch(this.scriptURL + "?action=get&limit=10000&max=10000&size=10000&t=" + Date.now());
             const data = await response.json();
             data.sort((a, b) => b.score - a.score);
             this.leaderboardData = data;
             this.renderTop3(data);
+            
+            this.updateModalStatus();
         } catch (e) {
             console.warn("API Fetch Failed", e);
             this.leaderboardData = this.mockData;
             this.renderTop3(this.mockData);
+            this.updateModalStatus();
+        }
+    },
+    
+    updateModalStatus: function() {
+        const statusEl = document.getElementById('lb-status');
+        if (statusEl) {
+            statusEl.innerText = `即時戰況 (目前顯示 ${this.leaderboardData.length} 筆資料)`;
         }
     },
 
@@ -519,7 +460,6 @@ const GoogleSheetAPI = {
             row.className = `lb-row`;
             let rankClass = index === 0 ? "rank-1" : (index === 1 ? "rank-2" : "rank-3");
             let rankText = index === 0 ? "1ST" : (index === 1 ? "2ND" : "3RD");
-            // Added toLocaleString() for commas
             row.innerHTML = `<div class="flex items-center gap-3 w-full"><span class="text-sm w-8 text-center ${rankClass}" style="font-family:'Orbitron'">${rankText}</span><span class="flex-1 text-left truncate font-bold text-white">${item.name}</span><span class="font-mono text-[#00c3ff]">${item.score.toLocaleString()}</span></div>`;
             listEl.appendChild(row);
         });
@@ -528,13 +468,15 @@ const GoogleSheetAPI = {
     renderFullList: function(highlightName = null, highlightScore = null) {
         const listEl = document.getElementById('full-lb-list');
         listEl.innerHTML = "";
+        
+        this.updateModalStatus();
+
         this.leaderboardData.forEach((item, index) => {
             const rank = index + 1;
             const row = document.createElement('div');
             row.className = `lb-row`;
             if (highlightName && item.name === highlightName && item.score == highlightScore) { row.classList.add('highlight'); }
             let rankColor = rank === 1 ? "rank-1" : (rank === 2 ? "rank-2" : (rank === 3 ? "rank-3" : ""));
-            // Added toLocaleString() for commas
             row.innerHTML = `<span class="w-10 font-bold ${rankColor}" style="font-family:'Orbitron'">#${rank}</span><span class="flex-1 text-left truncate px-2 text-gray-300">${item.name}</span><span class="w-20 text-right font-mono text-[#00c3ff]">${item.score.toLocaleString()}</span>`;
             listEl.appendChild(row);
         });
@@ -550,7 +492,7 @@ const GoogleSheetAPI = {
 
         if(!name || !phone) { alert('請輸入姓名與電話以便兌換獎品'); return; }
         const btn = document.getElementById('submitBtn'); btn.innerText = "UPLOADING..."; btn.disabled = true;
-        document.getElementById('ticketName').innerText = name; document.getElementById('ticketScore').innerText = score.toLocaleString(); // Add comma here too
+        document.getElementById('ticketName').innerText = name; document.getElementById('ticketScore').innerText = score.toLocaleString();
 
         const formData = new FormData();
         formData.append('name', name); formData.append('phone', phone); formData.append('score', score); formData.append('action', 'add');
@@ -560,15 +502,12 @@ const GoogleSheetAPI = {
         setTimeout(() => {
             document.getElementById('formScreen').classList.add('hidden');
             document.getElementById('ticketScreen').classList.remove('hidden');
-            
-            // Reverted: No discount logic
             this.leaderboardData.push({name: name, score: score}); 
             this.leaderboardData.sort((a, b) => b.score - a.score);
         }, 800); 
     }
 };
 
-// --- Game Engine ---
 class SoundManager {
     constructor() { 
         this.ctx = new (window.AudioContext || window.webkitAudioContext)(); 
@@ -677,8 +616,8 @@ class SoundManager {
     playNuke() { this.playTone(100, 'sawtooth', 1.0, 50); }
     playLevelUp() { this.playTone(600, 'sine', 0.1, 1200); setTimeout(() => this.playTone(800, 'sine', 0.3, 1600), 100); }
     playGameOver() { this.playTone(300, 'sawtooth', 1.5, 50); }
-    playDebuff() { this.playTone(150, 'sawtooth', 0.5, 50); } // Lower pitch sound for debuffs
-    playFever() { this.playTone(800, 'square', 0.5, 1200); } // Higher energy sound
+    playDebuff() { this.playTone(150, 'sawtooth', 0.5, 50); } 
+    playFever() { this.playTone(800, 'square', 0.5, 1200); } 
 }
 
 class Game {
@@ -687,7 +626,6 @@ class Game {
         this.ctx = this.canvas.getContext('2d');
         this.audio = new SoundManager();
         this.frame = 0;
-        // REMOVED: this.lastTime
         
         this.width = this.canvas.clientWidth || window.innerWidth; 
         this.height = this.canvas.clientHeight || window.innerHeight; 
@@ -713,8 +651,10 @@ class Game {
 
         this.reset(); this.bindEvents();
         
-        // Explicitly bind drawStaticBackground to ensure context
         this.drawStaticBackground = this.drawStaticBackground.bind(this);
+        // FORCE BINDING TO FIX TYPE ERROR
+        this.loop = this.loop.bind(this);
+        this.draw = this.draw.bind(this);
 
         window.addEventListener('resize', () => { 
             this.resize(); 
@@ -731,7 +671,6 @@ class Game {
         this.resetIdleTimer();
     }
     
-    // Moved drawStaticBackground here to be explicitly visible early in class
     drawStaticBackground() { 
         if(this.bgImage.complete && this.bgImage.naturalWidth > 0) {
              this.ctx.drawImage(this.bgImage, 0, 0, this.width, this.height);
@@ -849,12 +788,10 @@ class Game {
             
             this.paddle.x = relativeX - this.paddle.w / 2; 
             
-            // Fix for Gingerbread wide paddle: Only clamp if paddle is smaller than screen
             if (this.paddle.w <= this.width) {
                 if(this.paddle.x < 0) this.paddle.x = 0; 
                 if(this.paddle.x + this.paddle.w > this.width) this.paddle.x = this.width - this.paddle.w; 
             }
-            // If paddle is wider than screen (Gingerbread), allow it to move freely (center follows finger)
         };
         this.canvas.addEventListener('mousemove', e => moveHandler(e.clientX));
         this.canvas.addEventListener('touchstart', e => { e.preventDefault(); moveHandler(e.touches[0].clientX); }, { passive: false });
@@ -865,12 +802,10 @@ class Game {
         this.running = false; this.score = 0; if(this.hudScore) this.hudScore.innerText = "0";
         this.frame = 0;
         
-        // Reset Level
         this.level = 1;
         this.lastLevelUpScore = 0;
         document.getElementById('levelVal').innerText = "1";
 
-        // Reset Combo
         this.combo = 0; 
         const comboVal = document.getElementById('comboVal');
         if(comboVal) {
@@ -878,19 +813,16 @@ class Game {
             comboVal.parentElement.classList.remove('combo-pulse');
         }
         
-        // Reset Fever & Fog
         this.feverEnergy = 0;
         this.feverMode = false;
         this.feverType = null;
-        this.feverMax = 25; // Bricks needed to trigger fever
+        this.feverMax = 25; 
         this.fogActive = false;
-        this.multiballReady = false; // New flag for split
+        this.multiballReady = false; 
         
-        // Black Hole States
         this.blackHoleActive = false; 
         this.blackHolePos = {x:0, y:0};
         
-        // Gravity Warning State
         this.gravityWarningShown = false;
 
         this.fogOverlay.style.opacity = '0';
@@ -900,19 +832,14 @@ class Game {
         
         this.difficultyLevel = 1; this.lastBrickSpawnTime = 0; this.lastShotTime = 0;
         
-        // Initial Speeds - Reverted to Frame based logic but with new curve
         const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-        // Mobile 1.3 base speed for bricks
         this.baseBrickSpeed = isTouch ? 1.3 : 1.0; 
         this.brickSpeed = this.baseBrickSpeed;
         
         const paddleY = this.height - 120;
         this.paddle = { w: 100, h: 24, x: this.width/2 - 50, y: paddleY, color: '#00c3ff', state: 'cover' };
         
-        // Initial Ball Speed based on level 1
-        // Using the agreed upon 1.7 start for mobile (User request: 1.7)
         const initialBallSpeed = isTouch ? 1.7 : 4.0; 
-        // Fix for Multiball needing reference
         this.baseBallSpeed = initialBallSpeed;
 
         this.balls = []; this.balls.push({ x: this.width/2, y: paddleY - 20, r: 8, dx: 0, dy: 0, speed: initialBallSpeed, active: false, prevY: paddleY - 20 });
@@ -938,7 +865,6 @@ class Game {
         document.getElementById('ticketScreen').classList.add('hidden');
         document.getElementById('leaderboardModal').classList.remove('active');
         
-        // Show HUDs
         const comboHud = document.getElementById('combo-hud');
         comboHud.classList.remove('hidden');
         comboHud.style.opacity = '1';
@@ -967,7 +893,6 @@ class Game {
         document.getElementById('leaderboardModal').classList.remove('active');
         this.closeStoreModal();
         
-        // Hide HUDs
         document.getElementById('combo-hud').classList.add('hidden');
         document.getElementById('level-hud').classList.add('hidden');
 
@@ -986,12 +911,10 @@ class Game {
             }, 100);
             return;
         }
-        // Spawn 4 rows starting a bit lower (50px) to be visible immediately
         this.spawnBrickRow(4, 50);
     }
 
     spawnBrickRow(rowsInput = null, startYInput = null) {
-        // 1. Calculate Brick Width (Fixed 8 Cols) - RWD Logic
         const cols = 8;
         const gap = 5;
         const totalGap = (cols + 1) * gap;
@@ -999,27 +922,19 @@ class Game {
         const brickW = availableWidth / cols;
         const brickH = 20;
 
-        // 2. Determine Rows (Force 3-4)
-        // If specific rows requested (e.g. init), use it, but min 3.
-        // Otherwise random 3-4.
         let rows = rowsInput ? Math.max(rowsInput, 3) : (Math.floor(Math.random() * 2) + 3);
 
-        // 3. Determine Start Y
-        // If input provided, use it. Else default to spawning above screen to flow in.
-        // Default flow logic: start at -40 to stack downwards
         let currentY = startYInput !== null ? startYInput : -40;
 
         for(let r=0; r<rows; r++) {
             for(let c=0; c<cols; c++) {
-                 // Density: 90% chance to spawn (High density)
                  if(Math.random() > 0.9) continue;
 
                  const types = ['#00c3ff', '#0062cc', '#7c3aed', '#ffffff'];
                  const color = types[Math.floor(Math.random() * types.length)];
 
-                 // X position calculation
                  const x = gap + c * (brickW + gap);
-                 const y = currentY + (r * 30); // 30 is vertical spacing (20h + 10gap)
+                 const y = currentY + (r * 30); 
 
                  this.bricks.push({ x, y, w: brickW, h: brickH, status: 1, color });
             }
@@ -1040,45 +955,30 @@ class Game {
         const btn = document.getElementById('submitBtn'); btn.innerText = "確認送出"; btn.disabled = false;
     }
     
-    // Updated Logic for Smooth Difficulty
     updateLevel() {
-        // Level up every 10000 points
         if (this.score - this.lastLevelUpScore >= 10000) {
             this.level++;
-            // Update tracking
             this.lastLevelUpScore = Math.floor(this.score / 10000) * 10000;
             
-            // UI Update
             document.getElementById('levelVal').innerText = this.level;
             this.createFloatText("LEVEL UP!", this.width / 2 - 50, this.height / 2);
             this.audio.playLevelUp();
             
-            // Adjust Difficulty
-            // Cap level effect at level 20 to prevent impossibility
             const effectiveLevel = Math.min(this.level, 20);
             
-            // 1. Brick Speed: Step increase
-            // Base 1.0/1.3 -> Add 0.15 per level
             this.brickSpeed = this.baseBrickSpeed + (effectiveLevel * 0.15); 
             
-            // 2. Ball Speed: Gradual increase
             const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
             
-            // FIX: Adjusted Curve as requested
-            // Start slower (1.7 mobile / 4.0 PC)
-            // Scale smoother (0.22 mobile per level)
-            const currentBase = isTouch ? 1.7 : 4.0; // Renamed to avoid ReferenceError
+            const currentBase = isTouch ? 1.7 : 4.0; 
             const speedInc = isTouch ? 0.22 : 0.6; 
             
-            // Cap at 4.0 Mobile / 10.0 PC
             const maxSpeed = isTouch ? 4.0 : 10.0;
             
             let newBallSpeed = currentBase + (effectiveLevel * speedInc);
-            newBallSpeed = Math.min(newBallSpeed, maxSpeed); // Hard Cap
+            newBallSpeed = Math.min(newBallSpeed, maxSpeed); 
             
-            // Scale current balls to match new speed immediately
             this.balls.forEach(b => {
-                // Calculate current direction
                 const currentSpeed = Math.sqrt(b.dx*b.dx + b.dy*b.dy);
                 if (currentSpeed > 0) {
                     b.dx = (b.dx / currentSpeed) * newBallSpeed;
@@ -1091,7 +991,7 @@ class Game {
     
     triggerGravityWarning() {
         const overlay = document.getElementById('flash-overlay');
-        overlay.style.background = 'radial-gradient(circle, rgba(255, 0, 0, 0.6) 0%, rgba(100, 0, 0, 0.8) 100%)'; // Red flash
+        overlay.style.background = 'radial-gradient(circle, rgba(255, 0, 0, 0.6) 0%, rgba(100, 0, 0, 0.8) 100%)'; 
         overlay.style.opacity = '1'; 
         
         this.createFloatText("WARNING: GRAVITY DETECTED", this.width/2 - 120, this.height/2);
@@ -1104,49 +1004,38 @@ class Game {
     update() {
         this.frame++;
         
-        // Run Level Check
         this.updateLevel();
         
-        // Gravity Warning Check (Global Event at 200k)
         if (this.score >= 200000 && !this.gravityWarningShown) {
             this.gravityWarningShown = true;
             this.triggerGravityWarning();
         }
         
-        // Fever Timer
         if (this.feverMode) {
-            // Drain fever energy over time - Frame based
-            // 0.0833 per frame -> ~5 seconds at 60fps
             this.feverEnergy -= 0.0833; 
             
-            // Gatling logic - BARRAGE (Gift Storm)
             if (this.feverType === 'gatling') {
                 if (this.frame % 5 === 0) { 
-                    // Shoot 3 bullets with spread (Gift colors: Red, Green, Gold)
                     const colors = ['#ff0000', '#00ff00', '#ffd700'];
                     const c1 = colors[Math.floor(Math.random()*3)];
                     const c2 = colors[Math.floor(Math.random()*3)];
                     const c3 = colors[Math.floor(Math.random()*3)];
 
-                    this.bullets.push({ x: this.paddle.x + this.paddle.w/2, y: this.paddle.y, w: 4, h: 10, dx: 0, dy: -15, color: c1 }); // Center
-                    this.bullets.push({ x: this.paddle.x + this.paddle.w/2 - 10, y: this.paddle.y, w: 4, h: 10, dx: -3, dy: -14, color: c2 }); // Left
-                    this.bullets.push({ x: this.paddle.x + this.paddle.w/2 + 10, y: this.paddle.y, w: 4, h: 10, dx: 3, dy: -14, color: c3 }); // Right
+                    this.bullets.push({ x: this.paddle.x + this.paddle.w/2, y: this.paddle.y, w: 4, h: 10, dx: 0, dy: -15, color: c1 }); 
+                    this.bullets.push({ x: this.paddle.x + this.paddle.w/2 - 10, y: this.paddle.y, w: 4, h: 10, dx: -3, dy: -14, color: c2 }); 
+                    this.bullets.push({ x: this.paddle.x + this.paddle.w/2 + 10, y: this.paddle.y, w: 4, h: 10, dx: 3, dy: -14, color: c3 }); 
                     this.audio.playShoot();
                 }
             }
 
             if (this.feverEnergy <= 0) {
-                // 魯道夫衝刺(紅球) 結束爆炸特效
                 if (this.feverType === 'fireball') {
                     this.balls.forEach(ball => {
                         if (ball.active) {
-                            // 視覺特效
                             this.createParticles(ball.x, ball.y, '#ff4500');
-                            // 爆炸範圍 (半徑 120)
                             const explosionRadius = 120;
                             this.bricks.forEach(b => {
                                 if (b.status === 1) {
-                                    // 簡單的矩形中心距離計算
                                     const dx = b.x + b.w/2 - ball.x;
                                     const dy = b.y + b.h/2 - ball.y;
                                     if (Math.sqrt(dx*dx + dy*dy) < explosionRadius) {
@@ -1157,10 +1046,9 @@ class Game {
                             });
                         }
                     });
-                    this.audio.playNuke(); // 播放爆炸音效
+                    this.audio.playNuke(); 
                     this.createFloatText("💥 BOOM!", this.balls[0]?.x || this.width/2, this.balls[0]?.y || this.height/2);
                     
-                    // 畫面震動
                     const wrapper = document.getElementById('game-wrapper');
                     wrapper.classList.remove('shake-sm');
                     void wrapper.offsetWidth; 
@@ -1171,15 +1059,13 @@ class Game {
                 this.feverMode = false;
                 this.feverEnergy = 0;
                 this.feverType = null;
-                this.multiballReady = false; // Reset flag
+                this.multiballReady = false; 
                 
-                // Reset effects
                 this.balls.forEach(b => b.r = 8);
 
                 document.getElementById('fever-container').classList.remove('fever-active');
                 this.feverText.style.opacity = '0';
             }
-            // Update UI
             const pct = Math.min(100, (this.feverEnergy / this.feverMax) * 100);
             this.feverFill.style.width = pct + '%';
         }
@@ -1189,12 +1075,8 @@ class Game {
             if(p.y > this.height) { p.y = -5; p.x = Math.random() * this.width; } 
         });
         
-        // Spawn Bricks Logic (tied to level)
-        // Plan A: Initial 3000ms, Floor 1500ms
-        // Reduce 100ms per level
         const spawnInterval = Math.max(1500, 3000 - (this.level * 100)); 
         if(Date.now() - this.lastBrickSpawnTime > spawnInterval) { 
-            // New: Calls internal random 3-4 logic
             this.spawnBrickRow(); 
             this.lastBrickSpawnTime = Date.now(); 
         }
@@ -1202,20 +1084,16 @@ class Game {
         if(this.spenMode) { const now = Date.now(); if(now - this.lastShotTime > 200) { this.shootBullet(); this.lastShotTime = now; } }
         
         if (this.gingerbreadMode) {
-            // Ensure width stays consistent (Scheme A)
-            // Removed old logic that locked x position
         }
 
         let danger = false; 
         
-        // Movement Logic - Smoother
         const currentBrickSpeed = this.brickSpeed * (this.aiMode ? 0.5 : 1);
         
-        // Dynamic Brick Flow Logic
         const brickCount = this.bricks.length;
         let flowFactor = 1.0;
-        if (brickCount < 5) flowFactor = 1.5;       // Fast Flow
-        else if (brickCount > 20) flowFactor = 0.6; // Slow/Buffer Flow
+        if (brickCount < 5) flowFactor = 1.5;       
+        else if (brickCount > 20) flowFactor = 0.6; 
         
         this.bricks.forEach(b => { 
             if(b.status === 1) { 
@@ -1232,7 +1110,6 @@ class Game {
         });
         if(danger) this.dangerOverlay.classList.add('danger-pulse'); else this.dangerOverlay.classList.remove('danger-pulse');
         
-        // Check for ball loss (Combo Reset)
         const initialBallCount = this.balls.length;
         this.balls = this.balls.filter(b => b.y <= this.height);
         
@@ -1249,7 +1126,6 @@ class Game {
              this.gameOver("SIGNAL LOST"); 
         }
         
-        // Update Black Hole Logic
         if (this.blackHoleActive) {
             this.balls.forEach(b => {
                 let dx = this.blackHolePos.x - b.x;
@@ -1257,11 +1133,11 @@ class Game {
                 let dist = Math.sqrt(dx*dx + dy*dy);
                 
                 if (dist > 5) {
-                    b.x += dx * 0.1; // Suction speed
+                    b.x += dx * 0.1; 
                     b.y += dy * 0.1;
-                    b.r *= 0.95; // Shrink
+                    b.r *= 0.95; 
                 } else {
-                    b.active = false; // Eaten
+                    b.active = false; 
                 }
             });
             this.balls = this.balls.filter(b => b.active);
@@ -1269,32 +1145,24 @@ class Game {
             if (this.balls.length === 0) {
                 setTimeout(() => this.gameOver("CONSUMED BY DARKNESS"), 500);
             }
-            return; // Skip normal update
+            return; 
         }
 
         this.balls.forEach((ball, index) => {
             if (!ball.active) return; 
             
-            // AI Mode slows down balls too
-            // let moveSpeed = ball.speed * (this.aiMode ? 0.6 : 1);
-
-            // Fix: Prevent vertical locking
-            // Ensure dx is at least 20% of total speed
             const minDx = ball.speed * 0.2;
             if (Math.abs(ball.dx) < minDx) {
                  let sign = ball.dx >= 0 ? 1 : -1;
                  ball.dx = sign * minDx;
-                 // Adjust dy to maintain speed
                  let dySign = ball.dy >= 0 ? 1 : -1;
                  ball.dy = dySign * Math.sqrt(ball.speed * ball.speed - ball.dx * ball.dx);
             }
 
-            // Fix: Prevent horizontal locking
             const minDy = ball.speed * 0.2;
             if (Math.abs(ball.dy) < minDy) {
                  let sign = ball.dy >= 0 ? 1 : -1;
                  ball.dy = sign * minDy;
-                 // Adjust dx
                  let dxSign = ball.dx >= 0 ? 1 : -1;
                  ball.dx = dxSign * Math.sqrt(ball.speed * ball.speed - ball.dy * ball.dy);
             }
@@ -1303,7 +1171,6 @@ class Game {
             ball.x += ball.dx * (this.aiMode ? 0.6 : 1); 
             ball.y += ball.dy * (this.aiMode ? 0.6 : 1);
             
-            // Cap Max Vertical Speed to prevent tunneling
             const maxVSpeed = 12; 
             if(ball.dy > maxVSpeed) ball.dy = maxVSpeed; 
             if(ball.dy < -maxVSpeed) ball.dy = -maxVSpeed;
@@ -1322,14 +1189,12 @@ class Game {
             
             let hit = false;
             
-            // Top Collision
             if(ball.dy > 0 && ball.x >= this.paddle.x && ball.x <= this.paddle.x + this.paddle.w) {
                  if (ball.y + ball.r >= this.paddle.y && ball.y - ball.r < this.paddle.y + this.paddle.h) {
                       hit = true;
                  }
             }
             
-            // Corner/Edge Collision
             if (!hit && ball.dy > 0) {
                  if (ball.x + ball.r >= this.paddle.x &&
                      ball.x - ball.r <= this.paddle.x + this.paddle.w &&
@@ -1342,21 +1207,14 @@ class Game {
             if(hit) { 
                 ball.y = this.paddle.y - ball.r - 1; 
                 
-                // --- Fix: Normalize reflection vector to maintain constant speed ---
                 let hitPoint = ball.x - (this.paddle.x + this.paddle.w/2); 
-                // Normalize hit point (-1 to 1)
                 let normalizedHit = hitPoint / (this.paddle.w / 2);
                 
-                // Clamp hit point to avoid extreme angles
                 if (normalizedHit > 1) normalizedHit = 1;
                 if (normalizedHit < -1) normalizedHit = -1;
 
-                // Calculate bounce angle (max 60 degrees = PI/3)
                 let bounceAngle = normalizedHit * (Math.PI / 3); 
 
-                // Update velocity maintaining speed magnitude
-                // Note: sin(0) is 0 (straight up), so x depends on sin, y depends on cos.
-                // Since y is up (negative), we use -cos.
                 ball.dx = ball.speed * Math.sin(bounceAngle);
                 ball.dy = -ball.speed * Math.cos(bounceAngle);
                 
@@ -1364,21 +1222,17 @@ class Game {
                 this.createParticles(ball.x, ball.y, '#fff'); 
             }
             
-            // Collision Check for Bricks
             this.bricks.forEach(b => { 
-                // Using radius check for all balls now
                 if(b.status === 1 && 
                    ball.x + ball.r > b.x && 
                    ball.x - ball.r < b.x+b.w && 
                    ball.y + ball.r > b.y && 
                    ball.y - ball.r < b.y+b.h) { 
                     
-                    // MULTIBALL SPLIT LOGIC - ON IMPACT (Frost Split)
                     if (this.feverMode && this.feverType === 'multiball' && this.multiballReady) {
-                        this.multiballReady = false; // One time split
-                        // Spawn 6 balls
+                        this.multiballReady = false; 
                         for(let i=0; i<6; i++) {
-                            let angle = (Math.PI * 2 * i) / 6; // Circle spread
+                            let angle = (Math.PI * 2 * i) / 6; 
                             this.balls.push({ 
                                 x: ball.x, 
                                 y: ball.y, 
@@ -1390,27 +1244,23 @@ class Game {
                             });
                         }
                         this.createFloatText("❄️ SPLIT!", ball.x, ball.y);
-                        this.audio.playPowerUp(); // Split sound
+                        this.audio.playPowerUp(); 
                     }
 
-                    // FEVER MODE CHECK
                     if (this.feverMode && (this.feverType === 'fireball' || this.feverType === 'meteor')) {
-                         // Pass through (do nothing to velocity)
-                         // Fireball (Rudolph) is Red, Meteor (Titan) is White/Blue
                          let particleColor = this.feverType === 'fireball' ? '#ff0000' : '#f0f8ff';
                          this.createParticles(ball.x, ball.y, particleColor);
                          
-                         // Titan Shake Effect
                          if (this.feverType === 'meteor') {
                              const wrapper = document.getElementById('game-wrapper');
                              wrapper.classList.remove('shake-sm');
-                             void wrapper.offsetWidth; // Force reflow
+                             void wrapper.offsetWidth; 
                              wrapper.classList.add('shake-sm');
                              setTimeout(() => wrapper.classList.remove('shake-sm'), 200);
                          }
 
                     } else {
-                        ball.dy *= -1; // Normal bounce
+                        ball.dy *= -1; 
                     }
                     this.destroyBrick(b); 
                 } 
@@ -1418,7 +1268,7 @@ class Game {
         });
 
         this.powerUps.forEach((p, i) => { 
-            p.y += 3; // Normalize powerup drop speed
+            p.y += 3; 
             if(p.y + 15 > this.paddle.y && p.y - 15 < this.paddle.y + this.paddle.h && p.x > this.paddle.x && p.x < this.paddle.x + this.paddle.w) { 
                 this.activatePowerUp(p.type); 
                 this.powerUps.splice(i, 1); 
@@ -1426,7 +1276,6 @@ class Game {
             if(p.y > this.height) this.powerUps.splice(i, 1); 
         });
         
-        // Updated bullet update logic to handle custom dx/dy
         this.bullets.forEach((b, i) => { 
             b.y += (b.dy || -15); 
             b.x += (b.dx || 0);
@@ -1451,42 +1300,32 @@ class Game {
     destroyBrick(b) {
         b.status = 0; 
         
-        // Combo Calculation
         this.combo++;
-        const bonusMultiplier = 1 + (this.combo * 0.1); // 1.1, 1.2 ...
+        const bonusMultiplier = 1 + (this.combo * 0.1); 
         const points = Math.floor(100 * bonusMultiplier);
         this.score += points;
         
-        // Fever Energy Accumulation
         if (!this.feverMode) {
-            this.feverEnergy += 1; // +1 energy per brick
+            this.feverEnergy += 1; 
             const pct = Math.min(100, (this.feverEnergy / this.feverMax) * 100);
             this.feverFill.style.width = pct + '%';
             
             if (this.feverEnergy >= this.feverMax) {
                 this.feverMode = true;
                 
-                // --- Random Fever Type Selection ---
-                // Using internal names but mapped to new displays
-                // fireball -> Rudolph
-                // multiball -> Frost Split
-                // gatling -> Gift Storm
-                // meteor -> Titan Snowball
                 const types = ['fireball', 'multiball', 'gatling', 'meteor'];
                 this.feverType = types[Math.floor(Math.random() * types.length)];
                 
-                // Trigger specific start actions
                 if (this.feverType === 'multiball') {
-                   this.multiballReady = true; // Set flag for impact split
+                   this.multiballReady = true; 
                 } else if (this.feverType === 'meteor') {
-                    this.balls.forEach(b => b.r = 24); // Big balls
+                    this.balls.forEach(b => b.r = 24); 
                 }
 
                 this.audio.playFever();
                 document.getElementById('fever-container').classList.add('fever-active');
                 this.feverText.style.opacity = '1';
                 
-                // Float text for specific type (UPDATED CHRISTMAS NAMES)
                 let typeName = "FEVER!";
                 if(this.feverType === 'fireball') typeName = "🦌 RUDOLPH!";
                 if(this.feverType === 'multiball') typeName = "❄️ FROST SPLIT!";
@@ -1497,7 +1336,6 @@ class Game {
             }
         }
         
-        // Update HUD
         this.hudScore.innerText = this.score; 
         const comboEl = document.getElementById('comboVal');
         if(comboEl) {
@@ -1510,68 +1348,49 @@ class Game {
         this.audio.playBreak(); 
         this.createParticles(b.x + b.w/2, b.y + b.h/2, b.color);
         
-        // Drop Logic
         const rand = Math.random();
         let type = null;
         
-        // Decrease drop rate based on Level instead of raw score
         const reduction = (this.level - 1) * 0.005;
         
         let otherThreshold = 0.16 - reduction;
-        if (otherThreshold < 0.06) otherThreshold = 0.06; // Fix: Min 5% chance for common items
+        if (otherThreshold < 0.06) otherThreshold = 0.06; 
 
         const isHighScore = this.score >= 200000;
         
-        // --- Dynamic Black Hole Chance ---
         let highLevelBlackHoleChance = 0;
-        // UPDATED: 200k instead of 500k
         if (this.score > 200000) {
-            // Increase chance by 1% every 100k points after 200k, max 10%
             highLevelBlackHoleChance = Math.min(0.1, (this.score - 200000) / 5000000); 
         }
         
-        // Priority check for High Score Black Hole
-        // UPDATED: 200k instead of 500k
         if (this.score > 200000 && rand < highLevelBlackHoleChance) {
              type = 'blackhole';
         }
-        // Removed forced Expand after 200k
         
-        // Logic to include debuffs in the "other" pool
-        // 0.000 - 0.005: Gingerbread (0.5%)
         else if (rand < 0.005) {
             if (!isHighScore) type = 'gingerbread';
         } 
-        // 0.005 - 0.010: Nuke (0.5%)
         else if (rand < 0.01) {
              if (!isHighScore) type = 'nuke';
         }
-        // 0.010 - 0.015: Black Hole (0.5%) - FIXED RATE IN GENERAL POOL
         else if (rand < 0.015) {
              if (this.score > 200000) {
                  type = 'blackhole';
              } else {
-                 // Fallback if < 200k (don't spawn black hole)
-                 type = 'fog'; // Forced Fog as requested
+                 type = 'fog'; 
              }
         }
-        // 0.015 - Threshold: Others
         else if (rand < otherThreshold) {
-             // Sub-random for type selection
              const r = Math.random();
-             // 15% chance for Debuffs (Shrink / Fog only now)
              if (r < 0.15) {
                  const debuffRoll = Math.random();
                  if (debuffRoll < 0.5) type = 'shrink';
                  else type = 'fog';
              }
-             // 20% chance for Multiball
              else if (r < 0.30) {
                  type = 'multiball';
              }
-             // Rest for buffs
              else {
-                 // Modified here to exclude expand at high score
                  let commonTypes = ['expand', 'spen', 'ai'];
                  if (isHighScore) {
                      commonTypes = ['spen', 'ai'];
@@ -1580,7 +1399,6 @@ class Game {
              }
         }
         
-        // Final Safety Check: Ensure no Black Hole under 200k
         if (type === 'blackhole' && this.score < 200000) {
             type = 'fog';
         }
@@ -1589,14 +1407,12 @@ class Game {
     }
 
     activatePowerUp(type) {
-        // Play sound logic - check for debuff
         if (type === 'shrink' || type === 'fog' || type === 'blackhole') {
             this.audio.playDebuff();
         } else {
             this.audio.playPowerUp();
         }
         
-        // Icons mapping for text
         let iconMap = {
             'expand': '📱', 'spen': '🖊️', 'ai': '❄️', 'nuke': '🎁', 
             'multiball': '🔴', 'gingerbread': '🍪',
@@ -1607,12 +1423,11 @@ class Game {
         gtag('event', 'power_up', { 'type': type });
         var self = this;
         
-        // Logic
         if (type === 'shrink') {
-            this.paddle.w = 60; // Shrink width
-            this.paddle.color = '#ff4500'; // Red warning color
+            this.paddle.w = 60; 
+            this.paddle.color = '#ff4500'; 
             setTimeout(() => {
-                this.paddle.w = 100; // Restore
+                this.paddle.w = 100; 
                 this.paddle.color = '#00c3ff'; 
             }, 5000);
         }
@@ -1626,15 +1441,12 @@ class Game {
         }
         else if (type === 'blackhole') {
             this.blackHoleActive = true;
-            this.blackHolePos = {x: this.paddle.x + this.paddle.w/2, y: this.paddle.y - 20}; // Set pos
-            // No timeout, it ends the game
+            this.blackHolePos = {x: this.paddle.x + this.paddle.w/2, y: this.paddle.y - 20}; 
         }
         else if (type === 'gingerbread') {
              this.gingerbreadMode = true;
-             // Removed width change
              setTimeout(() => {
                  this.gingerbreadMode = false;
-                 // Removed width reset
              }, 5000);
         }
         else if (type === 'nuke') { 
@@ -1668,11 +1480,38 @@ class Game {
         setTimeout(() => this.modeIndicator.style.opacity = '0', 1500); 
     }
 
-    shootBullet() { this.audio.playShoot(); this.bullets.push({ x: this.paddle.x + 10, y: this.paddle.y, w: 4, h: 15 }); this.bullets.push({ x: this.paddle.x + this.paddle.w - 14, y: this.paddle.y, w: 4, h: 15 }); }
-    createParticles(x, y, color) { for(let i=0; i<8; i++) this.particles.push({ x: x, y: y, dx: (Math.random()-0.5)*5, dy: (Math.random()-0.5)*5, life: 1, color: color }); }
-    createFloatText(text, x, y) { const div = document.createElement('div'); div.innerText = text; div.style.position = 'absolute'; div.style.left = x + 'px'; div.style.top = y + 'px'; div.style.color = '#fff'; div.style.fontWeight = 'bold'; div.style.fontSize = '20px'; div.style.textShadow = '0 0 10px #00c3ff'; div.style.pointerEvents = 'none'; div.style.transition = 'all 1s'; document.body.appendChild(div); requestAnimationFrame(() => { div.style.top = (y - 100) + 'px'; div.style.opacity = 0; }); setTimeout(() => div.remove(), 1000); }
+    shootBullet() { 
+        this.audio.playShoot(); 
+        this.bullets.push({ x: this.paddle.x + 10, y: this.paddle.y, w: 4, h: 15 }); 
+        this.bullets.push({ x: this.paddle.x + this.paddle.w - 14, y: this.paddle.y, w: 4, h: 15 }); 
+    }
     
-    // New Helper to show Store Modal
+    createParticles(x, y, color) { 
+        for(let i=0; i<8; i++) {
+            this.particles.push({ x: x, y: y, dx: (Math.random()-0.5)*5, dy: (Math.random()-0.5)*5, life: 1, color: color }); 
+        }
+    }
+    
+    createFloatText(text, x, y) { 
+        const div = document.createElement('div'); 
+        div.innerText = text; 
+        div.style.position = 'absolute'; 
+        div.style.left = x + 'px'; 
+        div.style.top = y + 'px'; 
+        div.style.color = '#fff'; 
+        div.style.fontWeight = 'bold'; 
+        div.style.fontSize = '20px'; 
+        div.style.textShadow = '0 0 10px #00c3ff'; 
+        div.style.pointerEvents = 'none'; 
+        div.style.transition = 'all 1s'; 
+        document.body.appendChild(div); 
+        requestAnimationFrame(() => { 
+            div.style.top = (y - 100) + 'px'; 
+            div.style.opacity = 0; 
+        }); 
+        setTimeout(() => div.remove(), 1000); 
+    }
+    
     openStoreModal() {
         document.getElementById('storeModal').classList.add('active');
     }
@@ -1689,29 +1528,38 @@ class Game {
             this.ctx.fillRect(0, 0, this.width, this.height);
         }
 
-        this.ctx.fillStyle = 'rgba(0, 195, 255, 0.5)'; this.bgParticles.forEach(p => { this.ctx.globalAlpha = p.alpha; this.ctx.fillRect(p.x, p.y, p.size, p.size); this.ctx.globalAlpha = 1; });
-        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.3)'; this.ctx.fillRect(0, 0, this.width, this.height);
-        this.ctx.strokeStyle = 'rgba(0, 195, 255, 0.3)'; this.ctx.beginPath(); this.ctx.setLineDash([5, 15]); this.ctx.moveTo(0, this.paddle.y - 10); this.ctx.lineTo(this.width, this.paddle.y - 10); this.ctx.stroke(); this.ctx.setLineDash([]);
+        this.ctx.fillStyle = 'rgba(0, 195, 255, 0.5)'; 
+        this.bgParticles.forEach(p => { 
+            this.ctx.globalAlpha = p.alpha; 
+            this.ctx.fillRect(p.x, p.y, p.size, p.size); 
+            this.ctx.globalAlpha = 1; 
+        });
+        
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.3)'; 
+        this.ctx.fillRect(0, 0, this.width, this.height);
+        this.ctx.strokeStyle = 'rgba(0, 195, 255, 0.3)'; 
+        this.ctx.beginPath(); 
+        this.ctx.setLineDash([5, 15]); 
+        this.ctx.moveTo(0, this.paddle.y - 10); 
+        this.ctx.lineTo(this.width, this.paddle.y - 10); 
+        this.ctx.stroke(); 
+        this.ctx.setLineDash([]);
         
         this.drawPaddle(this.paddle.x, this.paddle.y, this.paddle.w, this.paddle.h, this.paddle.state, this.paddle.color);
         
-        // Draw Black Hole if active (Galaxy style)
         if (this.blackHoleActive) {
             this.ctx.save();
             this.ctx.translate(this.blackHolePos.x, this.blackHolePos.y);
             
-            // Draw Spiral Galaxy
             const time = this.frame * 0.05;
             const arms = 3;
             const particles = 30;
             
-            // Dark center
             this.ctx.beginPath();
             this.ctx.arc(0, 0, 10, 0, Math.PI * 2);
             this.ctx.fillStyle = '#000';
             this.ctx.fill();
 
-            // Accretion Disk / Arms
             for (let i = 0; i < arms; i++) {
                  for (let j = 0; j < particles; j++) {
                      const angle = (time * 2) + (Math.PI * 2 / arms) * i + (j * 0.2);
@@ -1721,66 +1569,79 @@ class Game {
                      
                      this.ctx.beginPath();
                      this.ctx.arc(x, y, (particles - j)/10, 0, Math.PI * 2);
-                     // Gradient colors: Purple -> Blue -> White
                      this.ctx.fillStyle = `hsla(${260 + j * 2}, 80%, 60%, ${1 - j/particles})`;
                      this.ctx.fill();
                  }
             }
             
-            // Event Horizon Glow
             this.ctx.beginPath();
             this.ctx.arc(0, 0, 15, 0, Math.PI*2);
-            this.ctx.strokeStyle = '#4b0082'; // Indigo
+            this.ctx.strokeStyle = '#4b0082'; 
             this.ctx.lineWidth = 2;
             this.ctx.stroke();
 
             this.ctx.restore();
         }
 
-        this.balls.forEach(ball => { if(ball.active) { this.ctx.beginPath(); this.ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI*2); 
-            // Fever visual change
-            if (this.feverMode) {
-                // Rudolph = Fireball (Red), Titan = Meteor (White), Frost = Multiball (Cyan), Gift = Gatling (Normal ball color)
-                if (this.feverType === 'fireball') {
-                    this.ctx.fillStyle = '#ff0000'; // Red nose
-                    this.ctx.shadowColor = '#8b0000';
-                    this.ctx.shadowBlur = 20;
-                } else if (this.feverType === 'meteor') {
-                    this.ctx.fillStyle = '#f0f8ff'; // Titan Ice White
-                    this.ctx.shadowColor = '#a5f3fc';
-                    this.ctx.shadowBlur = 20;
-                } else if (this.feverType === 'multiball') {
-                    this.ctx.fillStyle = '#00ffff'; // Frost Cyan
-                    this.ctx.shadowColor = '#e0ffff';
-                    this.ctx.shadowBlur = 15;
+        this.balls.forEach(ball => { 
+            if(ball.active) { 
+                this.ctx.beginPath(); 
+                this.ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI*2); 
+                if (this.feverMode) {
+                    if (this.feverType === 'fireball') {
+                        this.ctx.fillStyle = '#ff0000'; 
+                        this.ctx.shadowColor = '#8b0000';
+                        this.ctx.shadowBlur = 20;
+                    } else if (this.feverType === 'meteor') {
+                        this.ctx.fillStyle = '#f0f8ff'; 
+                        this.ctx.shadowColor = '#a5f3fc';
+                        this.ctx.shadowBlur = 20;
+                    } else if (this.feverType === 'multiball') {
+                        this.ctx.fillStyle = '#00ffff'; 
+                        this.ctx.shadowColor = '#e0ffff';
+                        this.ctx.shadowBlur = 15;
+                    } else {
+                        this.ctx.fillStyle = '#fff'; 
+                        this.ctx.shadowColor = '#fff'; 
+                        this.ctx.shadowBlur = 10;
+                    }
                 } else {
-                    this.ctx.fillStyle = '#fff'; // Normal for Gatling
+                    this.ctx.fillStyle = '#fff'; 
                     this.ctx.shadowColor = '#fff'; 
                     this.ctx.shadowBlur = 10;
                 }
-            } else {
-                this.ctx.fillStyle = '#fff'; 
-                this.ctx.shadowColor = '#fff'; 
-                this.ctx.shadowBlur = 10;
-            }
-            this.ctx.fill(); 
-            this.ctx.fill(); 
-            this.ctx.shadowBlur = 0; 
-        } });
+                this.ctx.fill(); 
+                this.ctx.fill(); 
+                this.ctx.shadowBlur = 0; 
+            } 
+        });
         
-        this.bricks.forEach(b => { this.ctx.fillStyle = b.color; this.ctx.fillRect(b.x, b.y, b.w, b.h); this.ctx.fillStyle = 'rgba(255,255,255,0.2)'; this.ctx.fillRect(b.x, b.y, b.w, b.h/2); });
+        this.bricks.forEach(b => { 
+            this.ctx.fillStyle = b.color; 
+            this.ctx.fillRect(b.x, b.y, b.w, b.h); 
+            this.ctx.fillStyle = 'rgba(255,255,255,0.2)'; 
+            this.ctx.fillRect(b.x, b.y, b.w, b.h/2); 
+        });
+        
         this.powerUps.forEach(p => {
-            this.ctx.beginPath(); this.ctx.arc(p.x, p.y - 5, 20, 0, Math.PI*2); this.ctx.fillStyle = 'rgba(0,0,0,0.5)'; this.ctx.fill();
+            this.ctx.beginPath(); 
+            this.ctx.arc(p.x, p.y - 5, 20, 0, Math.PI*2); 
+            this.ctx.fillStyle = 'rgba(0,0,0,0.5)'; 
+            this.ctx.fill();
             let strokeColor = '#fff'; 
             if (p.type === 'nuke') strokeColor = '#ef4444'; 
-            else if (p.type === 'shrink' || p.type === 'fog' || p.type === 'blackhole') strokeColor = '#ff0000'; // Debuffs
+            else if (p.type === 'shrink' || p.type === 'fog' || p.type === 'blackhole') strokeColor = '#ff0000'; 
             else if (p.type === 'multiball') strokeColor = '#22c55e'; 
             else if (p.type === 'expand') strokeColor = '#00c3ff'; 
             else if (p.type === 'spen') strokeColor = '#ffff00'; 
             else if (p.type === 'ai') strokeColor = '#ff00ff';
             
-            this.ctx.lineWidth = 2; this.ctx.strokeStyle = strokeColor; this.ctx.stroke();
-            this.ctx.font = "24px Arial"; this.ctx.textAlign = "center"; this.ctx.fillStyle = "#fff";
+            this.ctx.lineWidth = 2; 
+            this.ctx.strokeStyle = strokeColor; 
+            this.ctx.stroke();
+            this.ctx.font = "24px Arial"; 
+            this.ctx.textAlign = "center"; 
+            this.ctx.fillStyle = "#fff";
             let icon = "?"; 
             if(p.type === 'expand') icon = "📱"; 
             else if(p.type === 'spen') icon = "🖊️"; 
@@ -1794,19 +1655,29 @@ class Game {
             if (p.type === 'gingerbread') icon = "🍪";
             this.ctx.fillText(icon, p.x, p.y);
         });
-        this.ctx.fillStyle = '#ffff00'; this.bullets.forEach(b => { 
-            // Custom bullet color support
+        
+        this.ctx.fillStyle = '#ffff00'; 
+        this.bullets.forEach(b => { 
             this.ctx.fillStyle = b.color || '#ffff00';
             this.ctx.fillRect(b.x, b.y, b.w, b.h); 
         });
-        this.particles.forEach(p => { this.ctx.globalAlpha = p.life; this.ctx.fillStyle = p.color; this.ctx.beginPath(); this.ctx.arc(p.x, p.y, 3, 0, Math.PI*2); this.ctx.fill(); this.ctx.globalAlpha = 1; });
+        
+        this.particles.forEach(p => { 
+            this.ctx.globalAlpha = p.life; 
+            this.ctx.fillStyle = p.color; 
+            this.ctx.beginPath(); 
+            this.ctx.arc(p.x, p.y, 3, 0, Math.PI*2); 
+            this.ctx.fill(); 
+            this.ctx.globalAlpha = 1; 
+        });
     }
 
     loop() { 
         if(!this.running) return; 
         this.update(); 
         this.draw(); 
-        requestAnimationFrame(() => this.loop()); 
+        // Use the bound loop method directly
+        requestAnimationFrame(this.loop); 
     }
 }
 
